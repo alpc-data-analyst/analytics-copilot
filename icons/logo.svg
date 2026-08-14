@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Badge -->
+  <rect width="128" height="128" rx="28" fill="#1F2937"/>
+
+  <!-- Pulso de señal (línea ECG minimalista) -->
+  <path d="M16 76 H38 L52 42 L70 98 L82 58 L90 76 H104"
+        stroke="#FFFFFF" stroke-width="9" fill="none"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Punto de señal en vivo -->
+  <circle cx="110" cy="76" r="8" fill="#38BDF8"/>
+</svg>

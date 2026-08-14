@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Analytics Copilot</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Sprite de iconos incrustado (evita 42 cargas externas de icons.svg) -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <defs>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+      <path d="M21 3v5h-5"/>
+      <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+      <path d="M3 21v-5h5"/>
+    </symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2"/>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </symbol>
+    <symbol id="i-flask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 3h6"/>
+      <path d="M10 3v7L4.6 19.4A2 2 0 0 0 6.3 22h11.4a2 2 0 0 0 1.7-2.6L14 10V3"/>
+      <path d="M7 15h10"/>
+    </symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+      <circle cx="7" cy="7" r="1.5" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-cookie" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2a10 10 0 1 0 10 10c0-.5-.04-1-.11-1.5a3 3 0 0 1-4.39-3.39A3 3 0 0 1 13.5 2.11c-.5-.07-1-.11-1.5-.11z"/>
+      <circle cx="8.5" cy="10.5" r=".8" fill="currentColor"/>
+      <circle cx="15" cy="15" r=".8" fill="currentColor"/>
+      <circle cx="10" cy="16" r=".8" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="m8 12 3 3 5-6"/>
+    </symbol>
+    <symbol id="i-bar-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 3v18h18"/>
+      <path d="M8 17V9"/>
+      <path d="M13 17V5"/>
+      <path d="M18 17v-5"/>
+    </symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2"/>
+      <path d="M8 21h8"/>
+      <path d="M12 17v4"/>
+    </symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+      <circle cx="12" cy="13" r="3.5"/>
+    </symbol>
+    <symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="2" width="8" height="4" rx="1"/>
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+    </symbol>
+    <symbol id="i-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <path d="M14 2v6h6"/>
+      <path d="M8 13h8"/>
+      <path d="M8 17h8"/>
+      <path d="M8 9h2"/>
+    </symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 6 6 18"/>
+      <path d="m6 6 12 12"/>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="7"/>
+      <path d="m21 21-4.3-4.3"/>
+    </symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 6h18"/>
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      <path d="M10 11v6"/>
+      <path d="M14 11v6"/>
+    </symbol>
+    <symbol id="i-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+      <path d="M17 21v-8H7v8"/>
+      <path d="M7 3v5h8"/>
+    </symbol>
+    <symbol id="i-ban" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="m4.9 4.9 14.2 14.2"/>
+    </symbol>
+    <symbol id="i-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16.5 9.4 7.55 4.24"/>
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      <path d="M3.27 6.96 12 12.01l8.73-5.05"/>
+      <path d="M12 22.08V12"/>
+    </symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <path d="m17 8-5-5-5 5"/>
+      <path d="M12 3v12"/>
+    </symbol>
+    <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m16 18 6-6-6-6"/>
+      <path d="m8 6-6 6 6 6"/>
+    </symbol>
+    <symbol id="i-radio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4.9 19.1A10 10 0 0 1 4.9 4.9"/>
+      <path d="M7.8 16.2a6 6 0 0 1 0-8.5"/>
+      <circle cx="12" cy="12" r="2"/>
+      <path d="M16.2 7.8a6 6 0 0 1 0 8.5"/>
+      <path d="M19.1 4.9a10 10 0 0 1 0 14.2"/>
+    </symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m3 11 18-5v12L3 14z"/>
+      <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+    </symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="9" cy="21" r="1"/>
+      <circle cx="20" cy="21" r="1"/>
+      <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>
+    </symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1 7.8 7.8 7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z"/>
+    </symbol>
+    <symbol id="i-credit-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="5" width="20" height="14" rx="2"/>
+      <path d="M2 10h20"/>
+    </symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/>
+      <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>
+    </symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m9 6 6 6-6 6"/>
+    </symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3v4"/>
+      <path d="M12 17v4"/>
+      <path d="M3 12h4"/>
+      <path d="M17 12h4"/>
+      <path d="m6 6 2.5 2.5"/>
+      <path d="m15.5 15.5 2.5 2.5"/>
+      <path d="m6 18 2.5-2.5"/>
+      <path d="m15.5 8.5 2.5-2.5"/>
+    </symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M12 6v6l4 2"/>
+    </symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 4l14 8-14 8V4z" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-fast-forward" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 4l10 8-10 8V4z" fill="currentColor"/>
+      <path d="M13 4l10 8-10 8V4z" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="5" y="5" width="14" height="14" rx="1" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 5v14"/>
+      <path d="M5 12h14"/>
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M12 16v-5"/>
+      <path d="M12 8h.01"/>
+    </symbol>
+    <symbol id="i-linkedin" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45z"/>
+    </symbol>
+  </defs>
+</svg>
+
+  <div class="container">
+    <div class="header">
+      <h1><img class="header-logo" src="../icons/icon48.png" alt="Analytics Copilot"> Analytics Copilot</h1>
+    </div>
+
+    <!-- Home grid -->
+    <div id="homeGrid" class="home-grid">
+      <button class="home-card" data-tab="cache">
+        <span class="home-icon"><svg><use href="#i-refresh"/></svg></span>
+        <span class="home-label">Cache</span>
+        <span class="home-desc">Limpiar caché y refresh</span>
+      </button>
+      <button class="home-card" data-tab="timetravel">
+        <span class="home-icon"><svg><use href="#i-clock"/></svg></span>
+        <span class="home-label">Time Travel</span>
+        <span class="home-desc">Simular fecha y hora</span>
+      </button>
+      <button class="home-card" data-tab="consent">
+        <span class="home-icon"><svg><use href="#i-lock"/></svg></span>
+        <span class="home-label">Consent</span>
+        <span class="home-desc">Consent Mode v2</span>
+      </button>
+      <button class="home-card" data-tab="lab">
+        <span class="home-icon"><svg><use href="#i-flask"/></svg></span>
+        <span class="home-label">Lab</span>
+        <span class="home-desc">Inyectar y bloquear código</span>
+      </button>
+      <button class="home-card" data-tab="tags">
+        <span class="home-icon"><svg><use href="#i-tag"/></svg></span>
+        <span class="home-label">Tags</span>
+        <span class="home-desc">Detectar herramientas</span>
+      </button>
+      <button class="home-card" data-tab="crossdomain">
+        <span class="home-icon"><svg><use href="#i-cookie"/></svg></span>
+        <span class="home-label">Cookie Audit</span>
+        <span class="home-desc">Monitoriza cookies y sesiones</span>
+      </button>
+      <button class="home-card" data-tab="html">
+        <span class="home-icon"><svg><use href="#i-code"/></svg></span>
+        <span class="home-label">HTML</span>
+        <span class="home-desc">Copiar o descargar el HTML</span>
+      </button>
+      <button class="home-card" data-tab="console">
+        <span class="home-icon"><svg><use href="#i-monitor"/></svg></span>
+        <span class="home-label">Consola</span>
+        <span class="home-desc">Capturar logs de la consola</span>
+      </button>
+      <button class="home-card" data-tab="events">
+        <span class="home-icon"><svg><use href="#i-cart"/></svg></span>
+        <span class="home-label">Eventos GA4</span>
+        <span class="home-desc">Generador de dataLayer</span>
+      </button>
+      <div class="home-credit">
+        <a class="home-credit-name" href="https://www.antonioluisperez.com" target="_blank" rel="noopener noreferrer">by <strong>Antonio Luis Pérez</strong></a>
+        <a class="home-credit-in" href="https://www.linkedin.com/in/antonio-luis-perez-carmona/" target="_blank" rel="noopener noreferrer" title="LinkedIn — Antonio Luis Pérez Carmona"><svg><use href="#i-linkedin"/></svg></a>
+      </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- TAB: Tag Scanner                              -->
+    <!-- ============================================= -->
+    <div id="tabTags" class="tab-content hidden">
+
+      <div class="tags-header">
+        <span id="tagsUrl" class="tags-url"></span>
+        <button id="tagsScanBtn" class="tags-refresh-btn" title="Re-escanear"><svg><use href="#i-refresh"/></svg></button>
+      </div>
+
+      <div id="tagsResults" class="tags-results">
+        <div class="dl-empty">Escaneando página…</div>
+      </div>
+
+    </div>
+
+    <!-- ============================================= -->
+    <!-- TAB: HTML Grabber                             -->
+    <!-- ============================================= -->
+    <div id="tabHtml" class="tab-content hidden">
+
+      <div class="html-controls">
+        <button id="htmlCaptureBtn" class="btn btn-primary"><svg class="icon"><use href="#i-code"/></svg><span>Capturar HTML</span></button>
+        <span id="htmlUrl" class="tags-url"></span>
+      </div>
+
+      <div id="htmlInfo" class="html-info hidden">
+        <span id="htmlSize" class="html-size"></span>
+        <div class="html-actions">
+          <button id="htmlCopyBtn" class="btn btn-small"><svg class="icon icon-sm"><use href="#i-clipboard"/></svg><span>Copiar</span></button>
+          <button id="htmlDownloadBtn" class="btn btn-small"><svg class="icon icon-sm"><use href="#i-save"/></svg><span>Descargar .html</span></button>
+        </div>
+      </div>
+
+      <textarea id="htmlPreview" class="html-preview hidden" readonly spellcheck="false"></textarea>
+
+      <div id="htmlEmpty" class="dl-empty">Pulsa "Capturar HTML" para obtener el código de la página actual</div>
+
+      <div id="htmlStatus" class="html-status hidden"></div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- TAB: Console Capture                          -->
+    <!-- ============================================= -->
+    <div id="tabConsole" class="tab-content hidden">
+
+      <div class="con-controls">
+        <button id="conToggleBtn" class="btn btn-primary"><svg class="icon"><use href="#i-play"/></svg><span>Iniciar captura</span></button>
+        <button id="conRefreshBtn" class="btn-icon" title="Actualizar"><svg><use href="#i-refresh"/></svg></button>
+      </div>
+
+      <div id="conMeta" class="con-meta hidden">
+        <span id="conCount" class="con-count">0 mensajes</span>
+        <div class="con-actions">
+          <button id="conCopyBtn" class="btn btn-small"><svg class="icon icon-sm"><use href="#i-clipboard"/></svg><span>Copiar</span></button>
+          <button id="conDownloadBtn" class="btn btn-small"><svg class="icon icon-sm"><use href="#i-save"/></svg><span>Descargar</span></button>
+          <button id="conClearBtn" class="btn btn-small btn-ghost"><svg class="icon icon-sm"><use href="#i-trash"/></svg><span>Limpiar</span></button>
+        </div>
+      </div>
+
+      <textarea id="conPreview" class="con-preview hidden" readonly spellcheck="false"></textarea>
+
+      <div id="conEmpty" class="dl-empty">Pulsa "Iniciar captura", recarga la página e interactúa con ella, y vuelve aquí para copiar los logs.</div>
+
+      <div id="conStatus" class="con-status hidden"></div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- TAB: Eventos GA4 (generador dataLayer)        -->
+    <!-- ============================================= -->
+    <div id="tabEvents" class="tab-content hidden">
+
+      <div class="ev-controls">
+        <select id="evSelect" class="ev-select"></select>
+        <a id="evDocsLink" class="btn-icon ev-docs" href="#" target="_blank" rel="noopener" title="Ver documentación de Google"><svg><use href="#i-info"/></svg></a>
+      </div>
+
+      <div id="evFields" class="ev-fields"></div>
+
+      <div id="evItemBlock" class="ev-item-block hidden">
+        <div class="ev-item-title">Item (items[0])</div>
+        <div id="evItemFields" class="ev-fields"></div>
+      </div>
+
+      <textarea id="evSnippet" class="ev-snippet" spellcheck="false"></textarea>
+
+      <div class="ev-actions">
+        <button id="evCopyBtn" class="btn btn-small"><svg class="icon icon-sm"><use href="#i-clipboard"/></svg><span>Copiar</span></button>
+        <button id="evPushBtn" class="btn btn-small"><svg class="icon icon-sm"><use href="#i-play"/></svg><span>Push a la página</span></button>
+        <button id="evResetBtn" class="btn btn-small btn-ghost"><svg class="icon icon-sm"><use href="#i-trash"/></svg><span>Limpiar</span></button>
+      </div>
+
+      <div id="evStatus" class="ev-status hidden"></div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- TAB: Time Travel                              -->
+    <!-- ============================================= -->
+    <div id="tabTimeTravel" class="tab-content tt-tab hidden">
+
+      <button id="ttInfoBtn" class="tt-info-btn" type="button" aria-label="Información" aria-expanded="false">
+        <svg class="icon"><use href="#i-info"/></svg>
+      </button>
+      <div id="ttInfoPopover" class="tt-info-popover hidden" role="dialog" aria-labelledby="ttInfoBtn">
+        <p>Al activar, la página se recargará con la fecha simulada. El tiempo avanza normalmente desde la fecha elegida.</p>
+        <p>Afecta a <code>new Date()</code>, <code>Date.now()</code> y <code>Intl.DateTimeFormat</code> de la página.</p>
+        <p>Se mantiene activo mientras navegas. Desactiva para volver a la fecha real.</p>
+      </div>
+
+      <div class="tt-body">
+        <div class="tt-hero">
+          <div class="tt-hero-icon"><svg class="icon icon-xl"><use href="#i-clock"/></svg></div>
+          <p class="tt-hero-text">Simula una fecha y hora distinta en el navegador para probar configuraciones con fecha programada.</p>
+        </div>
+
+        <div class="tt-form">
+          <div class="tt-field">
+            <label for="ttDate">Fecha</label>
+            <input type="date" id="ttDate">
+          </div>
+          <div class="tt-field">
+            <label for="ttTime">Hora</label>
+            <input type="time" id="ttTime">
+          </div>
+          <button id="ttNowBtn" class="btn btn-small tt-now-btn" title="Poner fecha/hora actual">Ahora</button>
+        </div>
+
+        <button id="ttToggle" class="btn btn-primary tt-toggle"><svg class="icon"><use href="#i-fast-forward"/></svg><span>Activar Time Travel</span></button>
+
+        <div class="tt-status-bar">
+          <span id="ttStatus" class="tt-badge tt-badge-idle">Inactivo</span>
+          <span id="ttCurrentTime" class="tt-current-time"></span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================= -->
+    <!-- TAB: Cache                                    -->
+    <!-- ============================================= -->
+    <div id="tabCache" class="tab-content hidden">
+
+      <div id="cacheSiteBadge" class="cache-site-badge"></div>
+
+      <!-- Opciones de limpieza y recarga -->
+      <div class="cache-section">
+        <div class="cache-section-title">Limpiar y recargar</div>
+        <div class="cache-toggles">
+          <label class="cache-toggle">
+            <span>Cookies</span>
+            <input type="checkbox" id="cacheClearCookies" checked>
+          </label>
+          <label class="cache-toggle">
+            <span>Local Storage</span>
+            <input type="checkbox" id="cacheClearStorage" checked>
+          </label>
+          <label class="cache-toggle">
+            <span>Cache</span>
+            <input type="checkbox" id="cacheClearCache" checked>
+          </label>
+          <label class="cache-toggle">
+            <span>Service Workers</span>
+            <input type="checkbox" id="cacheClearServiceWorkers">
+          </label>
+        </div>
+        <button id="cacheClearBtn" class="btn cache-action-btn cache-clear-btn">
+          <svg class="icon"><use href="#i-trash"/></svg>
+          <span>Limpiar y recargar</span>
+        </button>
+      </div>
+
+      <div id="cacheStatus" class="cache-status hidden"></div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- TAB: Consent Mode                             -->
+    <!-- ============================================= -->
+    <div id="tabConsent" class="tab-content hidden">
+
+      <!-- Rules popover (overlay) -->
+      <div id="consentRulesPopover" class="cm-rules-popover hidden" role="dialog" aria-labelledby="consentRulesTitle">
+        <div class="cm-rules-header">
+          <strong id="consentRulesTitle">Reglas de auditoría</strong>
+          <button id="consentRulesClose" class="cm-rules-close" aria-label="Cerrar">✕</button>
+        </div>
+        <p class="cm-rules-intro">Reglas aplicadas al auditar el estado de Consent Mode, basadas en la documentación oficial de Google.</p>
+        <div id="consentRulesList" class="cm-rules-list"></div>
+      </div>
+
+      <div id="consentPermPrompt" class="hidden"></div>
+      <div id="consentResults" class="cm-results">
+
+        <!-- Status banner with inline info + refresh -->
+        <div id="consentBanner" class="cm-banner cm-banner-unknown">
+          <div class="cm-banner-left">
+            <span class="cm-banner-icon"><svg><use href="#i-lock"/></svg></span>
+            <span class="cm-banner-label">Consentimiento:</span>
+          </div>
+          <div class="cm-banner-right">
+            <span id="consentVersionChip" class="cm-version-chip hidden"></span>
+            <span id="consentBadge" class="cm-badge">—</span>
+            <button id="consentRulesBtn" class="cm-rules-btn" title="Ver reglas de auditoría" aria-expanded="false"><svg><use href="#i-info"/></svg></button>
+            <button id="consentCopyBtn" class="cm-refresh-btn" title="Copiar informe"><svg><use href="#i-clipboard"/></svg></button>
+            <button id="consentScanBtn" class="cm-refresh-btn" title="Re-escanear"><svg><use href="#i-refresh"/></svg></button>
+          </div>
+        </div>
+
+        <!-- CMP detection -->
+        <div id="consentCMPRow" class="cm-cmp hidden">
+          <span class="cm-cmp-label">CMP detectado:</span>
+          <span id="consentCMPName" class="cm-cmp-name"></span>
+        </div>
+
+        <!-- Implementación y ajustes (estilo Consent Mode Inspector) -->
+        
+
+        <!-- Audit findings (plegable) -->
+        
+
+        <!-- Sub-pestañas -->
+        <div class="cm-tabs">
+          <button class="cm-tab is-active" data-cmtab="estado" type="button">Estado</button>
+          <button class="cm-tab" data-cmtab="hits" type="button">Pings</button>
+        </div>
+
+        <div id="cmTabEstado">
+          <!-- Señales: tabla grande, solo estados -->
+          <div class="cm-section">
+            <div id="consentSignalsBody" class="cm-sig-table"></div>
+          </div>
+<div id="consentAuditSection" class="cm-audit hidden">
+          <details id="consentAuditDetails" class="cm-audit-details">
+            <summary id="consentAuditSummary" class="cm-audit-summary">Auditoría</summary>
+            <div id="consentAuditBody" class="cm-audit-list"></div>
+          </details>
+        </div>
+<!-- Technical details (collapsible) -->
+        <details class="cm-details">
+          <summary class="cm-details-summary">Detalles técnicos</summary>
+          <div class="cm-details-body">
+            <!-- GCS / GCD codes -->
+            <div class="cm-codes">
+              <div class="cm-code-card">
+                <span class="cm-code-label">GCS Code</span>
+                <span id="consentGCS" class="cm-code-value">—</span>
+                <span id="consentGCSDesc" class="cm-code-desc"></span>
+              </div>
+              <div class="cm-code-card">
+                <span class="cm-code-label">GCD Code</span>
+                <span id="consentGCD" class="cm-code-value">—</span>
+                <span id="consentGCDDesc" class="cm-code-desc"></span>
+              </div>
+            </div>
+
+            <!-- GCD decoded -->
+            <div id="consentGCDSection" class="cm-section hidden">
+              <div class="cm-section-title">GCD Decodificado</div>
+              <div id="consentGCDDecoded" class="cm-gcd-decoded"></div>
+            </div>
+
+            <!-- Calculadora GCD -->
+            <div class="cm-section">
+              <div class="cm-section-title">Calculadora GCD</div>
+              <input type="text" id="consentGcdCalcInput" class="cm-calc-input" placeholder="Pega un valor gcd para decodificarlo, p.ej. 13p3p3p3p5" spellcheck="false">
+              <div id="consentGcdCalcOut" class="cm-gcd-decoded"></div>
+            </div>
+          </div>
+        </details>
+<div id="consentHistorySection" class="cm-section hidden">
+          <div class="cm-section-title">Historial en dataLayer</div>
+          <div id="consentHistoryBody" class="cm-history"></div>
+        </div>
+        </div>
+
+        <div id="cmTabHits" class="hidden">
+          <div id="consentModeInfo" class="cm-mode-line hidden">
+            <span id="consentModeType" class="cm-chip">—</span>
+            <span id="consentModeExtras" class="cm-mode-extras"></span>
+          </div>
+          <div id="consentHitsEmpty" class="dl-empty">Aún no se han capturado hits de Google. Navega o interactúa con la web y re-escanea.</div>
+<div id="consentNetworkSection" class="cm-section hidden">
+          <div class="cm-section-title">Hits de Google · estado al disparo
+            <button id="consentHitsInfoBtn" class="cm-mini-info" aria-label="Qué significa esto">i</button>
+          </div>
+          <div id="consentHitsInfoPop" class="cm-hits-pop hidden">
+            <p>Cada fila es un hit real enviado a Google con su consentimiento <em>en el momento del disparo</em>: <strong>✓</strong> todo concedido, <strong>parcial</strong>, <strong>✕</strong> todo denegado. Los hits sin información de consentimiento se ocultan.</p>
+            <p><strong>⚠ Ping sin consentimiento</strong>: con todo denegado, el modo Avanzado envía igualmente pings <em>sin cookies ni identificadores</em> que Google usa para modelar conversiones. No es un error de implementación y Google lo permite; pero si tu política exige cero comunicación sin consentimiento, la web debería usar el modo Básico (bloquear los tags hasta que el usuario acepte).</p>
+          </div>
+          <div id="consentNetworkBody" class="cm-network"></div>
+        </div>
+        </div>
+
+        
+
+        <!-- Consent history from dataLayer -->
+        
+
+        <!-- Network hits -->
+        
+
+      </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- TAB: Cookie Audit                              -->
+    <!-- ============================================= -->
+    <div id="tabCrossDomain" class="tab-content hidden">
+
+      <div class="ca-controls">
+        <button id="caStartBtn" class="btn btn-primary"><svg class="icon"><use href="#i-link"/></svg><span>Iniciar Audit</span></button>
+        <button id="caStopBtn" class="btn ca-stop-btn hidden"><svg class="icon"><use href="#i-stop"/></svg><span>Detener Audit</span></button>
+        <button id="caCheckBtn" class="btn-icon hidden" title="Comprobar ahora"><svg><use href="#i-refresh"/></svg></button>
+        <button id="caClearBtn" class="btn-icon hidden" title="Borrar auditoría"><svg><use href="#i-trash"/></svg></button>
+        <button id="caHelpBtn" class="btn-icon" title="Ayuda — cómo funcionan las cookies"><svg><use href="#i-info"/></svg></button>
+        <span id="caStatus" class="ca-badge ca-badge-idle">Inactivo</span>
+      </div>
+
+      <!-- Help / glossary popover -->
+      <div id="caHelpPopover" class="ca-help-popover hidden" role="dialog">
+        <div class="ca-help-header">
+          <strong>Cómo funciona esta auditoría</strong>
+          <button id="caHelpClose" class="ca-help-close" aria-label="Cerrar">✕</button>
+        </div>
+        <div id="caHelpBody" class="ca-help-body"></div>
+      </div>
+
+      <div id="caResults" class="ca-results">
+        <div class="dl-empty">Pulsa "Iniciar Audit" para capturar las cookies actuales, monitorizar cambios en tiempo real y diagnosticar por qué se pierde la sesión de GA4.</div>
+      </div>
+
+    </div>
+
+    <!-- ============================================= -->
+    <!-- TAB: Lab — Inject & Block                     -->
+    <!-- ============================================= -->
+    <div id="tabLab" class="tab-content hidden">
+
+      <!-- Block Requests -->
+      <div class="lab-card" data-lab-feature="blocks">
+        <div role="button" tabindex="0" class="lab-card-header" aria-expanded="true" aria-controls="labBodyBlocks">
+          <span class="lab-card-header-left">
+            <span class="lab-card-icon"><svg><use href="#i-ban"/></svg></span>
+            <span class="lab-card-titlegroup">
+              <span class="lab-card-title">Bloquear Requests</span>
+              <span class="lab-card-sub">Impide la carga de scripts concretos</span>
+            </span>
+          </span>
+          <span class="lab-card-header-right">
+            <span class="lab-card-badge" id="labBlocksBadge" hidden>0</span>
+            <span class="lab-card-chevron" aria-hidden="true"><svg><use href="#i-chevron-right"/></svg></span>
+          </span>
+        </div>
+        <div id="labBodyBlocks" class="lab-card-body">
+          <div class="lab-field-label">Atajos rápidos</div>
+          <div class="lab-block-quick">
+            <button class="lab-quick-btn" data-pattern="googletagmanager.com/gtm.js">GTM</button>
+            <button class="lab-quick-btn" data-pattern="google-analytics.com/g/collect">GA4</button>
+            <button class="lab-quick-btn" data-pattern="connect.facebook.net">Meta Pixel</button>
+            <button class="lab-quick-btn" data-pattern="googleads.g.doubleclick.net">Google Ads</button>
+            <button class="lab-quick-btn" data-pattern="analytics.tiktok.com">TikTok</button>
+          </div>
+          <div class="lab-field-label">Patrón personalizado</div>
+          <div class="lab-block-add">
+            <input type="text" id="labBlockUrl" class="lab-input" placeholder="ej. example.com/tracker.js">
+            <button id="labBlockAddBtn" class="lab-block-add-btn"><svg class="icon icon-sm"><use href="#i-plus"/></svg><span>Añadir</span></button>
+          </div>
+          <div id="labBlockList" class="lab-block-list"></div>
+        </div>
+      </div>
+
+      <!-- Inject GTM -->
+      <div class="lab-card is-collapsed" data-lab-feature="gtm">
+        <div role="button" tabindex="0" class="lab-card-header" aria-expanded="false" aria-controls="labBodyGtm">
+          <span class="lab-card-header-left">
+            <span class="lab-card-icon"><svg><use href="#i-package"/></svg></span>
+            <span class="lab-card-titlegroup">
+              <span class="lab-card-title">Inyectar GTM Container</span>
+              <span class="lab-card-sub">Carga un GTM propio tras recargar</span>
+            </span>
+          </span>
+          <span class="lab-card-header-right">
+            <label class="lab-switch" onclick="event.stopPropagation()">
+              <input type="checkbox" id="labGtmEnabled">
+              <span class="lab-switch-slider"></span>
+            </label>
+            <span class="lab-card-chevron" aria-hidden="true"><svg><use href="#i-chevron-right"/></svg></span>
+          </span>
+        </div>
+        <div id="labBodyGtm" class="lab-card-body">
+          <input type="text" id="labGtmId" class="lab-input" placeholder="GTM-XXXXXXX">
+        </div>
+      </div>
+
+      <!-- Push dataLayer -->
+      <div class="lab-card is-collapsed" data-lab-feature="datalayer">
+        <div role="button" tabindex="0" class="lab-card-header" aria-expanded="false" aria-controls="labBodyDl">
+          <span class="lab-card-header-left">
+            <span class="lab-card-icon"><svg><use href="#i-upload"/></svg></span>
+            <span class="lab-card-titlegroup">
+              <span class="lab-card-title">Push al dataLayer</span>
+              <span class="lab-card-sub">Dispara eventos tras cada recarga</span>
+            </span>
+          </span>
+          <span class="lab-card-header-right">
+            <label class="lab-switch" onclick="event.stopPropagation()">
+              <input type="checkbox" id="labDlEnabled">
+              <span class="lab-switch-slider"></span>
+            </label>
+            <span class="lab-card-chevron" aria-hidden="true"><svg><use href="#i-chevron-right"/></svg></span>
+          </span>
+        </div>
+        <div id="labBodyDl" class="lab-card-body">
+          <textarea id="labDlCode" class="lab-textarea" rows="3" placeholder='{"event": "purchase", "ecommerce": {"value": 99.99}}'></textarea>
+          <button id="labDlPushBtn" class="lab-action-btn"><svg class="icon"><use href="#i-play"/></svg><span>Probar push ahora</span></button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="lab-actions">
+        <button id="labSaveBtn" class="btn btn-primary"><svg class="icon"><use href="#i-save"/></svg><span>Guardar y Recargar</span></button>
+        <button id="labClearBtn" class="btn btn-small btn-ghost"><svg class="icon icon-sm"><use href="#i-trash"/></svg><span>Limpiar todo</span></button>
+      </div>
+
+      <div id="labStatus" class="lab-status hidden"></div>
+    </div>
+
+    <!-- Status (shared across tabs) -->
+    <div id="status" class="status hidden"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
