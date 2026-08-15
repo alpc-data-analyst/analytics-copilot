@@ -4,6 +4,8 @@ Extensión de Chrome (Manifest V3) con **9 herramientas para QA de analítica we
 
 Funciona como **popup** en la barra de Chrome y como **panel dentro de DevTools** (pestaña "Analytics Copilot"), con un widget flotante que avisa de las features activas en la página.
 
+![Analytics Copilot](docs/screenshots/menu.jpg)
+
 ## Herramientas
 
 | | Herramienta | Qué hace |
@@ -37,6 +39,10 @@ No está en la Chrome Web Store — se instala en modo desarrollador:
 4. Completa la compra — la sección **Conversiones** muestra cada objetivo con su value, currency, label, si viajó el gclid y si lleva enhanced conversions
 
 Todo sin abrir la pestaña Network.
+
+| | |
+|---|---|
+| ![Consent Mode](docs/screenshots/consent-mode.jpg) | ![Cookie Audit](docs/screenshots/cookies.jpg) |
 
 ## Permisos y privacidad
 

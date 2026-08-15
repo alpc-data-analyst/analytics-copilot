@@ -13,3 +13,4 @@ npm-debug.log*
 
 # Node (por si acaso)
 node_modules/
+capturas/
