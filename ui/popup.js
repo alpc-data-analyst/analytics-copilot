@@ -4359,12 +4359,15 @@ function caComputeStatus(cookies, alerts, timeline) {
 
   // Problemas de atribución Google Ads
   const ads = caExtractAdsInfo(cookies);
-  const lastGclid = caClickIdsFromTimeline(timeline).filter(f => f.param === "gclid").pop();
+  const seenGclids = caClickIdsFromTimeline(timeline).filter(f => f.param === "gclid").map(f => f.value);
+  const lastGclid = seenGclids.length ? { value: seenGclids[seenGclids.length - 1] } : null;
   const gclLost = timeline.some(e => e.type === "cookie" && e.removed && /^_gcl_/.test(e.name || ""));
   const adsProblems = [];
   if (gclLost) adsProblems.push("se ha borrado una cookie _gcl_* (atribución Ads)");
   if (lastGclid && !ads.aw) adsProblems.push("gclid en la URL pero _gcl_aw no se creó");
-  else if (lastGclid && ads.aw && ads.aw.gclid !== lastGclid.value) adsProblems.push("_gcl_aw guarda un gclid distinto al de la URL");
+  // Solo es problema si la cookie guarda un gclid que NO se vio en NINGÚN aterrizaje
+  // de este audit (varios gclids en una sesión de pruebas es normal).
+  else if (seenGclids.length && ads.aw && seenGclids.indexOf(ads.aw.gclid) === -1) adsProblems.push("_gcl_aw guarda un gclid que no se ha visto en ninguna URL de este audit");
 
   const gaProblems = [];
   if (gaLost) gaProblems.push("se ha borrado una cookie de GA4");
@@ -4507,9 +4510,18 @@ function caRenderSesion(cookies, alerts, timeline) {
         '<span class="ca-card-meta">visto en la URL pero NO guardado en _gcl_aw — la conversión no se atribuirá (¿Conversion Linker? ¿consent?)</span></div>';
     }
     if (ads.aw) {
-      const match = lastGclid
-        ? (ads.aw.gclid === lastGclid.value ? " · coincide con la URL ✓" : " · ≠ del gclid de la URL ⚠")
-        : "";
+      const seen = clickIds.filter(f => f.param === "gclid").map(f => f.value);
+      const uniq = seen.filter(function (v, i) { return seen.indexOf(v) === i; });
+      let match = "";
+      if (uniq.length) {
+        if (uniq.indexOf(ads.aw.gclid) !== -1) {
+          match = uniq.length > 1
+            ? " · coincide con un aterrizaje ✓ (" + uniq.length + " gclids distintos en esta sesión)"
+            : " · coincide con la URL ✓";
+        } else {
+          match = " · no coincide con ningún gclid visto en este audit ⚠";
+        }
+      }
       const bits = [];
       if (ads.aw.capturedSec) bits.push('capturado <span data-ca-since-ts="' + ads.aw.capturedSec + '">' + caRelTime(ads.aw.capturedSec, nowSec) + '</span>');
       if (ads.aw.cookie.expirationDate) bits.push("expira en " + formatCookieExpiry(ads.aw.cookie.expirationDate));
