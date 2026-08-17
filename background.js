@@ -399,14 +399,23 @@ function parseCookieSessions(cookies) {
       const mid = "G-" + c.name.replace("_ga_", "");
       const parts = c.value.split(".");
       const sess = { cookieName: c.name, measurementId: mid, raw: c.value, sessionId: null, sessionCount: null };
-      // Try to extract session ID and count from GS format
-      if (parts.length >= 4) {
+      // GS2 (formato actual): GS2.1.s<start>$o<count>$g<engaged>$t<lastHit>$j<n>$l<n>$h<n>
+      const mS = c.value.match(/[.$]s(\d{9,11})/);
+      const mO = c.value.match(/\$o(\d+)/);
+      const mT = c.value.match(/\$t(\d+)/);
+      if (mS) {
+        sess.sessionStart = parseInt(mS[1], 10);
+        if (mO) sess.sessionCount = parseInt(mO[1], 10);
+        if (mT) {
+          const raw = parseInt(mT[1], 10);
+          sess.lastHit = raw >= 1000000000 ? raw : sess.sessionStart + raw;
+        }
+      } else if (parts.length >= 4) {
+        // GS1 (legado): GS1.1.<start>.<count>.<...>
         const tsVal = parseInt(parts[2], 10);
         if (tsVal > 1000000000) sess.sessionStart = tsVal;
-        if (parts.length >= 5) {
-          const sct = parseInt(parts[3], 10);
-          if (!isNaN(sct) && sct > 0 && sct < 100000) sess.sessionCount = sct;
-        }
+        const sct = parseInt(parts[3], 10);
+        if (!isNaN(sct) && sct > 0 && sct < 100000) sess.sessionCount = sct;
       }
       sessions.push(sess);
     }

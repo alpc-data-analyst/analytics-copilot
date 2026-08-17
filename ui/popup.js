@@ -2486,16 +2486,14 @@ const CONSENT_TYPES = [
 // GCD character meanings
 const GCD_CHARS = {
   l: { label: "No configurado", cls: "muted" },
-  t: { label: "Permitido (default, sin update)", cls: "granted" },
-  f: { label: "Denegado (default, sin update)", cls: "denied" },
-  e: { label: "Permitido (default, confirmado con update)", cls: "granted" },
-  p: { label: "Denegado \u2192 Permitido (actualizado)", cls: "granted" },
+  p: { label: "Denegado (default, sin update)", cls: "denied" },
   q: { label: "Denegado \u2192 Denegado (sin cambio)", cls: "denied" },
-  r: { label: "Permitido \u2192 Denegado (revocado)", cls: "denied" },
-  m: { label: "Sin default \u2192 Permitido", cls: "granted" },
-  n: { label: "Sin default \u2192 Denegado", cls: "denied" },
-  u: { label: "Permitido (sin update)", cls: "granted" },
-  v: { label: "Denegado (sin update)", cls: "denied" },
+  t: { label: "Permitido (default, sin update)", cls: "granted" },
+  r: { label: "Denegado \u2192 Permitido (actualizado)", cls: "granted" },
+  u: { label: "Permitido \u2192 Denegado (revocado)", cls: "denied" },
+  v: { label: "Permitido \u2192 Permitido (confirmado)", cls: "granted" },
+  m: { label: "Sin default \u2192 Denegado", cls: "denied" },
+  n: { label: "Sin default \u2192 Permitido", cls: "granted" },
 };
 
 // GCS descriptions
@@ -2723,14 +2721,14 @@ function scanConsentMode() {
       var d = sig.default;
       var u = sig.update;
       if (!d && !u) ch = "l";
+      else if (d === "denied" && !u) ch = "p";
       else if (d === "granted" && !u) ch = "t";
-      else if (d === "denied" && !u) ch = "f";
-      else if (d === "granted" && u === "granted") ch = "e";
-      else if (d === "denied" && u === "granted") ch = "p";
       else if (d === "denied" && u === "denied") ch = "q";
-      else if (d === "granted" && u === "denied") ch = "r";
-      else if (!d && u === "granted") ch = "m";
-      else if (!d && u === "denied") ch = "n";
+      else if (d === "denied" && u === "granted") ch = "r";
+      else if (d === "granted" && u === "denied") ch = "u";
+      else if (d === "granted" && u === "granted") ch = "v";
+      else if (!d && u === "denied") ch = "m";
+      else if (!d && u === "granted") ch = "n";
     }
     gcdStr += "3" + ch;
   });
