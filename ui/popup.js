@@ -2541,6 +2541,14 @@ function scanConsentMode() {
     v2: false,
   };
 
+  // ¿Es un hit de Google que puede llevar estado de consentimiento?
+  // Incluye google.com/pagead/1p-conversion (Safari/Firefox) y pagead2.googlesyndication.
+  function isGoogleHit(str) {
+    return /google-analytics\.com|analytics\.google\.com|doubleclick\.net|googleadservices\.com|googlesyndication\.com/i.test(str) ||
+           /\/(g|ccm)\/collect(\?|$)/.test(str) ||
+           /^https?:\/\/(www\.)?google\.[a-z.]{2,6}\/pagead\//i.test(str);
+  }
+
   // Clasificador de vendor para hits de Google
   function classifyVendor(host, path) {
     if (host.indexOf("google-analytics") !== -1 || host.indexOf("analytics.google") !== -1 || path.indexOf("/g/collect") !== -1) return "GA4";
@@ -2775,8 +2783,7 @@ function scanConsentMode() {
     var perf = performance.getEntriesByType("resource");
     for (var p = 0; p < perf.length; p++) {
       var pname = perf[p].name;
-      if (!/google-analytics\.com|analytics\.google\.com|doubleclick\.net|googleadservices\.com|googlesyndication\.com/.test(pname) &&
-          pname.indexOf("/ccm/collect") === -1 && pname.indexOf("/g/collect") === -1) continue;
+      if (!isGoogleHit(pname)) continue;
       try {
         var pu = new URL(pname);
         var pgcs = pu.searchParams.get("gcs");
@@ -2816,13 +2823,17 @@ function consentNetworkInterceptor() {
     return "Google";
   }
 
+  function isGoogleHit(str) {
+    return /google-analytics\.com|analytics\.google\.com|doubleclick\.net|googleadservices\.com|googlesyndication\.com/i.test(str) ||
+           /\/(g|ccm)\/collect(\?|$)/.test(str) ||
+           /^https?:\/\/(www\.)?google\.[a-z.]{2,6}\/pagead\//i.test(str);
+  }
+
   function extractParams(url) {
     try {
       if (!url) return;
       var str = typeof url === "string" ? url : url.toString();
-      var isGoogle = /google-analytics\.com|analytics\.google\.com|doubleclick\.net|googleadservices\.com|googlesyndication\.com/.test(str) ||
-                     str.indexOf("/g/collect") !== -1 || str.indexOf("/ccm/collect") !== -1;
-      if (!isGoogle) return;
+      if (!isGoogleHit(str)) return;
 
       var u = new URL(str, location.href);
       var gcs = u.searchParams.get("gcs");
@@ -2908,18 +2919,25 @@ let lastConsentData = null;
 let lastConsentHost = "";
 
 // Decode GCD string: format is 1[3x][3x][3x][3x]5
+// Formato real: 1<d><L><d><L><d><L><d><L>… (p.ej. 13p3p3p3p5l1). Los dígitos son
+// opacos y Google avisa de que los campos pueden cambiar: extraemos solo las 4 letras.
 function decodeGCDString(gcd) {
-  if (!gcd || gcd.length < 10) return null;
+  if (!gcd) return null;
+  var m = String(gcd).match(/^1\d([a-z])\d([a-z])\d([a-z])\d([a-z])/i);
+  if (!m) return null;
   var gcdTypes = ["ad_storage", "analytics_storage", "ad_user_data", "ad_personalization"];
   var decoded = {};
-  var positions = [2, 4, 6, 8];
   for (var i = 0; i < gcdTypes.length; i++) {
-    if (positions[i] < gcd.length) {
-      var ch = gcd[positions[i]];
-      decoded[gcdTypes[i]] = { char: ch, info: GCD_CHARS[ch] || { label: "Desconocido (" + ch + ")", cls: "muted" } };
-    }
+    var ch = m[i + 1].toLowerCase();
+    decoded[gcdTypes[i]] = { char: ch, info: GCD_CHARS[ch] || { label: "Desconocido (" + ch + ")", cls: "muted" } };
   }
   return decoded;
+}
+
+// Las 4 letras de un gcd, para comparar códigos sin depender de la cola variable
+function gcdLetters(gcd) {
+  var m = String(gcd || "").match(/^1\d([a-z])\d([a-z])\d([a-z])\d([a-z])/i);
+  return m ? (m[1] + m[2] + m[3] + m[4]).toLowerCase() : null;
 }
 
 // =============================================
@@ -2958,39 +2976,39 @@ const CONSENT_AUDIT_RULES = [
   },
   {
     id: "v2-ad-user-data-missing",
-    title: "ad_user_data obligatoria (Consent Mode v2)",
-    description: "ad_user_data es obligatoria en Consent Mode v2 para tráfico del EEE, UK y Suiza desde marzo de 2024. Sin ella, Google Ads descarta las conversiones europeas.",
+    title: "Falta ad_user_data (Consent Mode v2)",
+    description: "ad_user_data es una señal de Consent Mode v2 requerida para tráfico del EEE, UK y Suiza desde marzo de 2024 cuando se usan funciones de medición basadas en datos de usuario (Enhanced Conversions, user_id, Customer Match) o audiencias. Sin ella no se envían datos de usuario a Google Ads (peor matching) y los usuarios europeos quedan fuera de las audiencias.",
     severity: "error",
-    docs: "https://support.google.com/google-ads/answer/14009635",
+    docs: "https://support.google.com/tagmanager/answer/13695607",
     check: function (ctx) {
       if (ctx.usingAdsOrAnalytics && !ctx.has("ad_user_data")) {
-        return "Falta ad_user_data. Obligatoria en Consent Mode v2 (EEA/UK/Suiza, desde marzo 2024). Sin ella, Google Ads descartará conversiones del tráfico europeo.";
+        return "Falta ad_user_data (Consent Mode v2, EEA/UK/Suiza desde marzo 2024). Sin ella no se envían datos de usuario a Google (Enhanced Conversions, user_id, Customer Match): las conversiones europeas pierden matching y los usuarios EEA se excluyen de audiencias/remarketing.";
       }
     },
   },
   {
     id: "v2-ad-personalization-missing",
-    title: "ad_personalization obligatoria (Consent Mode v2)",
-    description: "ad_personalization es obligatoria en Consent Mode v2 para tráfico del EEE, UK y Suiza desde marzo de 2024. Sin ella, Google Ads descarta las conversiones europeas.",
+    title: "Falta ad_personalization (Consent Mode v2)",
+    description: "ad_personalization es una señal de Consent Mode v2 requerida para tráfico del EEE, UK y Suiza desde marzo de 2024 para publicidad personalizada y remarketing. Sin ella, los usuarios europeos no entran en audiencias ni reciben anuncios personalizados.",
     severity: "error",
-    docs: "https://support.google.com/google-ads/answer/14009635",
+    docs: "https://support.google.com/tagmanager/answer/13695607",
     check: function (ctx) {
       if (ctx.usingAdsOrAnalytics && !ctx.has("ad_personalization")) {
-        return "Falta ad_personalization. Obligatoria en Consent Mode v2 (EEA/UK/Suiza, desde marzo 2024). Sin ella, Google Ads descartará conversiones del tráfico europeo.";
+        return "Falta ad_personalization (Consent Mode v2, EEA/UK/Suiza desde marzo 2024). Sin ella, los usuarios europeos quedan excluidos de audiencias, remarketing y personalización de anuncios.";
       }
     },
   },
   {
     id: "sensitive-default-granted",
     title: "Defaults deben ser 'denied' para señales sensibles",
-    description: "Google recomienda default='denied' en EEA para ad_storage, ad_user_data, ad_personalization, analytics_storage y personalization_storage. Un default 'granted' implica tracking antes del consentimiento y es contrario a ePrivacy.",
+    description: "Para tráfico EEE/UK, ePrivacy y RGPD exigen que las señales que implican cookies no esenciales partan de default='denied'. El ejemplo oficial de Google cubre ad_storage, ad_user_data, ad_personalization y analytics_storage; personalization_storage se incluye como buena práctica de esta auditoría. Un default 'granted' implica tracking antes del consentimiento.",
     severity: "warn",
     docs: "https://developers.google.com/tag-platform/security/guides/consent",
     check: function (ctx) {
       var msgs = [];
       ctx.SENSITIVE.forEach(function (k) {
         if (ctx.getDef(k) === "granted") {
-          msgs.push(k + " tiene default = granted. Google recomienda default 'denied' para tráfico EEE — el usuario recibe tracking antes de consentir.");
+          msgs.push(k + " tiene default = granted. Para tráfico EEE debería partir de 'denied' (ePrivacy/RGPD" + (k === "personalization_storage" ? "; buena práctica, no señal de Consent Mode" : "; ejemplo oficial de Google") + ") — el usuario recibe tracking antes de consentir.");
         }
       });
       return msgs.length ? msgs : null;
@@ -3010,37 +3028,37 @@ const CONSENT_AUDIT_RULES = [
   },
   {
     id: "ad-user-data-requires-ad-storage",
-    title: "ad_user_data no puede ser granted con ad_storage denied",
-    description: "ad_user_data requiere el mismo consentimiento que ad_storage. Si se rechaza el almacenamiento publicitario, tampoco pueden enviarse datos del usuario.",
-    severity: "error",
-    docs: "https://support.google.com/google-ads/answer/14009635",
+    title: "ad_user_data granted con ad_storage denied (combinación inusual)",
+    description: "Son señales independientes según Google: ad_storage controla las cookies publicitarias y ad_user_data el envío de datos de usuario (Enhanced Conversions, user_id). No es un error, pero la mayoría de CMPs las agrupan en la misma categoría.",
+    severity: "info",
+    docs: "https://support.google.com/tagmanager/answer/13802165",
     check: function (ctx) {
       if (ctx.ad === "denied" && ctx.adUserData === "granted") {
-        return "ad_user_data = granted con ad_storage = denied. Incoherente: no puede enviarse user data cuando se rechaza el almacenamiento publicitario.";
+        return "ad_user_data = granted con ad_storage = denied. Combinación inusual (la mayoría de CMPs las agrupan en la categoría de marketing); comprueba el mapeo del CMP.";
       }
     },
   },
   {
     id: "ad-personalization-requires-ad-storage",
-    title: "ad_personalization no puede ser granted con ad_storage denied",
-    description: "ad_personalization requiere el mismo consentimiento que ad_storage. Si se rechaza el almacenamiento publicitario, no puede personalizarse.",
-    severity: "error",
-    docs: "https://support.google.com/google-ads/answer/14009635",
+    title: "ad_personalization granted con ad_storage denied (combinación inusual)",
+    description: "Son señales independientes según Google: ad_storage controla las cookies publicitarias y ad_personalization la personalización de anuncios. No es un error, pero la mayoría de CMPs las agrupan en la misma categoría.",
+    severity: "info",
+    docs: "https://support.google.com/tagmanager/answer/13802165",
     check: function (ctx) {
       if (ctx.ad === "denied" && ctx.adPers === "granted") {
-        return "ad_personalization = granted con ad_storage = denied. Incoherente: no puede personalizarse sin consentimiento de almacenamiento publicitario.";
+        return "ad_personalization = granted con ad_storage = denied. Combinación inusual (la mayoría de CMPs las agrupan en la categoría de marketing); comprueba el mapeo del CMP.";
       }
     },
   },
   {
     id: "personalization-storage-needs-consent",
-    title: "personalization_storage requiere consentimiento explícito",
-    description: "Cuando ads + analytics están denegados, personalization_storage debe estar también denegado. No se considera estrictamente necesaria.",
-    severity: "error",
-    docs: "https://developers.google.com/tag-platform/security/concepts/consent-mode",
+    title: "personalization_storage granted sin consentimiento de ads/analytics",
+    description: "personalization_storage es un 'privacy parameter' que Google no evalúa en sus etiquetas (solo actúa vía additional consent checks). No es estrictamente necesaria según ePrivacy, así que solo debería estar granted si el usuario aceptó una categoría de preferencias/personalización en la CMP.",
+    severity: "info",
+    docs: "https://support.google.com/tagmanager/answer/13802165",
     check: function (ctx) {
       if (ctx.bothDenied && ctx.pers === "granted") {
-        return "personalization_storage = granted con ad_storage y analytics_storage denegados. Esta señal requiere consentimiento explícito según Google.";
+        return "personalization_storage = granted con ad_storage y analytics_storage denegados. Comprueba que la CMP lo enlaza a una categoría aceptada por el usuario; si no, debería ser denied (buena práctica ePrivacy, no un requisito de Google).";
       }
     },
   },
@@ -3049,7 +3067,7 @@ const CONSENT_AUDIT_RULES = [
     title: "functionality_storage sólo granted si es estrictamente necesario",
     description: "Cuando ads + analytics están denegados, functionality_storage sólo debería ser granted si cubre funciones estrictamente necesarias (idioma, sesión básica). Si incluye tracking, debe denegarse.",
     severity: "info",
-    docs: "https://developers.google.com/tag-platform/security/concepts/consent-mode",
+    docs: "https://support.google.com/tagmanager/answer/13802165",
     check: function (ctx) {
       if (ctx.bothDenied && ctx.func === "granted") {
         return "functionality_storage = granted sin consentimiento de analítica/publicidad. Aceptable sólo si cubre funciones estrictamente necesarias (idioma, sesión básica).";
@@ -3061,7 +3079,7 @@ const CONSENT_AUDIT_RULES = [
     title: "security_storage suele mantenerse granted",
     description: "security_storage cubre antifraude y autenticación y habitualmente se mantiene granted incluso sin consentimiento, porque se considera estrictamente necesaria.",
     severity: "info",
-    docs: "https://developers.google.com/tag-platform/security/concepts/consent-mode",
+    docs: "https://support.google.com/tagmanager/answer/13802165",
     check: function (ctx) {
       if (ctx.bothDenied && ctx.sec === "denied") {
         return "security_storage = denied. Lo habitual es mantenerlo granted para antifraude/sesión, incluso sin consentimiento.";
@@ -3070,13 +3088,13 @@ const CONSENT_AUDIT_RULES = [
   },
   {
     id: "ad-granted-user-data-denied",
-    title: "ad_storage granted requiere ad_user_data granted",
-    description: "Si ad_storage está granted pero ad_user_data denied, Google Ads rechaza las conversiones por no enviar datos del usuario.",
-    severity: "warn",
-    docs: "https://support.google.com/google-ads/answer/14009635",
+    title: "ad_storage granted pero ad_user_data denied",
+    description: "Con ad_user_data denied no se envían enhanced conversions (datos first-party hasheados) ni user_id, y la exportación de conversiones por click ID hacia Google Ads queda limitada. Las conversiones básicas siguen midiéndose.",
+    severity: "info",
+    docs: "https://developers.google.com/tag-platform/security/concepts/consent-mode",
     check: function (ctx) {
       if (ctx.ad === "granted" && ctx.adUserData === "denied") {
-        return "ad_storage = granted pero ad_user_data = denied. Google Ads rechazará conversiones porque no se envían datos del usuario.";
+        return "ad_storage = granted pero ad_user_data = denied: no se envían enhanced conversions ni user_id y la exportación de conversiones por click ID queda limitada. Suele indicar un mapeo de CMP incompleto.";
       }
     },
   },
@@ -3085,7 +3103,7 @@ const CONSENT_AUDIT_RULES = [
     title: "security_storage denied con aceptación total es anómalo",
     description: "Cuando el usuario acepta todo, security_storage debería estar granted. Si sigue denied, probablemente hay un bug en la CMP.",
     severity: "warn",
-    docs: "https://developers.google.com/tag-platform/security/concepts/consent-mode",
+    docs: "https://support.google.com/tagmanager/answer/13802165",
     check: function (ctx) {
       if (ctx.ad === "granted" && ctx.an === "granted" && ctx.sec === "denied") {
         return "security_storage = denied con consentimiento aceptado. Posible bug en la CMP — esta señal debería estar granted casi siempre.";
@@ -3095,19 +3113,19 @@ const CONSENT_AUDIT_RULES = [
   {
     id: "update-without-default",
     title: "default debe ejecutarse antes del primer update",
-    description: "Si se dispara gtag('consent','update',...) sin un default previo, las etiquetas se comportan como si el consentimiento no estuviese inicializado.",
+    description: "Si se dispara gtag('consent','update',...) sin un gtag('consent','default',...) previo, las etiquetas que hayan disparado antes envían hits con las señales sin definir (Google las trata como granted) y el default nunca llega a aplicarse.",
     severity: "warn",
     docs: "https://developers.google.com/tag-platform/security/guides/consent",
     check: function (ctx) {
       if (ctx.updateCalls.length > 0 && ctx.defaultCalls.length === 0) {
-        return "Se detectó gtag('consent','update',...) sin un gtag('consent','default',...) previo. Según Google, el default debe ejecutarse primero o las etiquetas se comportan como si el consentimiento fuese indefinido.";
+        return "Se detectó gtag('consent','update',...) sin gtag('consent','default',...) previo. Según Google, el default debe ejecutarse antes de cargar gtag/GTM y antes de cualquier config/event; sin él los hits previos salen con señales sin definir (tratadas como granted).";
       }
     },
   },
   {
     id: "default-after-update-order",
     title: "Orden default → update en dataLayer",
-    description: "El default debe aparecer antes del primer update en dataLayer. Si se invierte el orden, el default posterior puede sobrescribir la decisión del usuario.",
+    description: "El default debe aparecer antes del primer update en dataLayer y antes de cargar gtag/GTM. Si se invierte el orden, el default no surte efecto (no anula un update ya aplicado) y los hits previos salen con señales sin definir, tratadas como granted.",
     severity: "warn",
     docs: "https://developers.google.com/tag-platform/security/guides/consent",
     check: function (ctx) {
@@ -3115,32 +3133,49 @@ const CONSENT_AUDIT_RULES = [
         var firstDef = ctx.defaultCalls[0].index != null ? ctx.defaultCalls[0].index : -1;
         var firstUpd = ctx.updateCalls[0].index != null ? ctx.updateCalls[0].index : -1;
         if (firstUpd >= 0 && firstDef >= 0 && firstUpd < firstDef) {
-          return "El primer update se ejecutó antes que el default en dataLayer. El orden correcto es default → update; en caso contrario, el default puede sobrescribir la decisión del usuario.";
+          return "El primer update se ejecutó antes que el default en dataLayer. El orden correcto es default → carga de gtag/GTM → update; en caso contrario el default no surte efecto y los hits previos al update salen con señales sin definir (tratadas como granted). Un default posterior NO sobrescribe un update ya aplicado.";
         }
       }
     },
   },
   {
     id: "multiple-defaults",
-    title: "Una sola llamada a default por página",
-    description: "Google recomienda una sola llamada a gtag('consent','default',...) por carga de página. Múltiples defaults pueden solaparse y generar estados inesperados.",
+    title: "Defaults solapados con el mismo ámbito regional",
+    description: "Google permite varios gtag('consent','default',…) por página (uno global + uno por región; el más específico prevalece). Solo es problemático que dos defaults fijen la misma señal para el mismo ámbito: el orden de ejecución decide y el resultado es frágil.",
     severity: "info",
-    docs: "https://developers.google.com/tag-platform/security/guides/consent",
+    docs: "https://developers.google.com/tag-platform/security/guides/consent#region-specific_behavior",
     check: function (ctx) {
-      if (ctx.defaultCalls.length > 1) {
-        return "Se detectaron " + ctx.defaultCalls.length + " llamadas a gtag('consent','default',...). Google recomienda una sola por página — múltiples defaults pueden solaparse.";
+      var CONSENT_KEYS = ["ad_storage", "ad_user_data", "ad_personalization", "analytics_storage", "functionality_storage", "personalization_storage", "security_storage"];
+      var calls = ctx.defaultCalls;
+      if (calls.length < 2) return;
+      var seen = {}, conflicts = [];
+      calls.forEach(function (c, ci) {
+        var cfg = c.config || {};
+        var regions = Array.isArray(cfg.region) && cfg.region.length ? cfg.region.map(String) : ["global"];
+        var keys = Object.keys(cfg).filter(function (k) { return CONSENT_KEYS.indexOf(k) !== -1; });
+        regions.forEach(function (r) {
+          keys.forEach(function (k) {
+            var id = r + "|" + k;
+            if (seen[id] != null && seen[id] !== ci) conflicts.push(k + " (" + (r === "global" ? "global" : "region " + r) + ")");
+            else if (seen[id] == null) seen[id] = ci;
+          });
+        });
+      });
+      if (conflicts.length) {
+        var uniq = conflicts.filter(function (v, i, a) { return a.indexOf(v) === i; });
+        return "Se detectaron " + calls.length + " llamadas a gtag('consent','default',...) que fijan la misma señal para el mismo ámbito: " + uniq.join(", ") + ". El resultado depende del orden de ejecución. Un default global + defaults por región (más específicos) es correcto y no genera este aviso.";
       }
     },
   },
   {
     id: "ads-data-redaction-recommended",
-    title: "ads_data_redaction recomendado con publicidad denegada",
-    description: "Con ad_storage denegado, ads_data_redaction=true redacta los identificadores de anuncios (gclid, dclid) de los pings cookieless. Google lo recomienda para minimizar datos.",
+    title: "ads_data_redaction: minimización de datos con publicidad denegada",
+    description: "Con ad_storage denegado, ads_data_redaction=true redacta los identificadores de clic (gclid/dclid) de los pings cookieless de Google Ads y Floodlight. Es una opción de minimización de datos, no una recomendación explícita de Google; no afecta a GA4 y no tiene efecto si ad_storage está granted.",
     severity: "info",
     docs: "https://developers.google.com/tag-platform/security/guides/consent",
     check: function (ctx) {
       if (ctx.ad === "denied" && ctx.data.adsDataRedaction !== true) {
-        return "ad_storage está denegado pero ads_data_redaction no está activo. Actívalo para redactar gclid/dclid de los pings sin consentimiento.";
+        return "ad_storage está denegado pero ads_data_redaction no está activo. Valora activarlo para redactar gclid/dclid de los pings de Google Ads/Floodlight sin consentimiento (minimización de datos; GA4 no se ve afectado).";
       }
     },
   },
@@ -3409,7 +3444,8 @@ function renderConsentResults(data) {
   var gcdCalc = data.gcdCode;
   if (gcdCalc && data.detected) {
     consentGCD.textContent = gcdCalc;
-    consentGCDDesc.textContent = data.gcdRaw && data.gcdRaw !== gcdCalc
+    var lc = gcdLetters(gcdCalc), lr = gcdLetters(data.gcdRaw);
+    consentGCDDesc.textContent = (data.gcdRaw && lr && lc && lr !== lc)
       ? "Red: " + data.gcdRaw
       : "";
   } else {
@@ -3544,7 +3580,7 @@ function renderGcdCalc() {
   if (!raw) return;
   var decoded = decodeGCDString(raw);
   if (!decoded) {
-    consentGcdCalcOut.innerHTML = '<div class="cm-calc-invalid">Formato no reconocido — un gcd válido tiene el formato 1[3x][3x][3x][3x]5, p.ej. 13p3p3p3p5</div>';
+    consentGcdCalcOut.innerHTML = '<div class="cm-calc-invalid">Formato no reconocido — un gcd válido empieza por 1 y alterna dígito+letra, p.ej. 13p3p3p3p5l1</div>';
     return;
   }
   Object.keys(decoded).forEach(function (type) {
@@ -3922,75 +3958,92 @@ function caExtractClientIdInfo(cookies) {
   };
 }
 
-// Parse _ga_<MID> cookies to extract session_start / session_count / last_hit.
-// GA4 uses two formats:
-//   GS1.1.<sessStart>.<sessCount>.<sessNumber>.<engagementMs>.0.0
-//   GS2.1.s<sessStart>$o<sessCount>$t<lastHit>$s<…>$e<…>
-// The `$g` flag appears inconsistent across versions — we no longer surface it
-// as "consent" because its meaning isn't reliably documented.
+// Parse _ga_<MID>. Timestamps ABSOLUTOS (unix seg). El session id ES el inicio de sesión.
+//   GS1.1.<sessionId>.<sessionNumber>.<engaged 0|1>.<lastHitTs>.<joinTimer>.<loggedIn>.<hash>
+//   GS2.1.s<sessionId>$o<num>$g<engaged>$t<lastHitTs>$j<joinTimer>$l<loggedIn>$h<hash>
+// `$g` = session engaged (NO es consent). `$j` = countdown de Google Signals.
 function caExtractSessionInfo(cookies) {
   const out = [];
   for (const c of cookies) {
     if (!/^_ga_[A-Z0-9]+$/i.test(c.name)) continue;
     const measurementId = "G-" + c.name.replace(/^_ga_/, "");
     const v = c.value || "";
-    const mSess = v.match(/\.s(\d{9,11})/);
-    const mCnt  = v.match(/\$o(\d+)/) || v.match(/\.\d+\.(\d+)\.\d+\.\d+/);
-    const mLast = v.match(/\$t(\d+)/);
-
-    let sessStart = mSess ? parseInt(mSess[1], 10) : null;
-    const sessCount = mCnt ? parseInt(mCnt[1], 10) : null;
-    if (!sessStart) {
-      const parts = v.split(".");
-      if (parts.length >= 4) {
-        const ts = parseInt(parts[2], 10);
-        if (ts > 1000000000) sessStart = ts;
-      }
+    const isGS2 = /^GS2\./.test(v);
+    const parts = v.split(".");
+    let sessStart = null, sessCount = null, engaged = null, lastHitAbsSec = null;
+    if (isGS2) {
+      const mS = v.match(/\$?s(\d{9,11})/), mO = v.match(/\$o(\d+)/),
+            mG = v.match(/\$g([01])/), mT = v.match(/\$t(\d+)/);
+      sessStart = mS ? parseInt(mS[1], 10) : null;
+      sessCount = mO ? parseInt(mO[1], 10) : null;
+      engaged = mG ? mG[1] === "1" : null;
+      if (mT) { const raw = parseInt(mT[1], 10); if (raw >= 1000000000) lastHitAbsSec = raw; }
+    } else if (parts.length >= 4) {
+      const ts = parseInt(parts[2], 10);
+      if (ts > 1000000000) sessStart = ts;
+      sessCount = parseInt(parts[3], 10) || null;
+      if (parts.length >= 5 && /^[01]$/.test(parts[4])) engaged = parts[4] === "1";
+      if (parts.length >= 6) { const lh = parseInt(parts[5], 10); if (lh >= 1000000000) lastHitAbsSec = lh; }
     }
-    // In GS2, `$t` can be either an absolute unix timestamp or a relative
-    // offset from sessStart depending on the version. Detect which by size:
-    // anything ≥ 1e9 is clearly an absolute unix timestamp.
-    let lastHitAbsSec = null;
-    if (mLast) {
-      const raw = parseInt(mLast[1], 10);
-      if (raw >= 1000000000) lastHitAbsSec = raw;
-      else if (sessStart) lastHitAbsSec = sessStart + raw;
-    }
-
     out.push({
-      cookieName: c.name,
-      measurementId,
-      raw: v,
-      sessionStart: sessStart,
-      sessionCount: sessCount,
-      lastHitAbs: lastHitAbsSec,
-      cookie: c,
+      cookieName: c.name, measurementId, raw: v,
+      sessionStart: sessStart, sessionCount: sessCount,
+      engaged, lastHitAbs: lastHitAbsSec, cookie: c,
     });
   }
   return out;
 }
 
 // ---- Extractores de atribución Google Ads ----
-// _gcl_aw = "GCL.<timestamp>.<gclid>" — la cookie que guarda el click ID.
-// _gcl_au = Conversion Linker (90 días). _gcl_gb = wbraid (iOS).
+// Cookies de click ID: <prefijo>_aw|dc|gb|ag|gs (prefijo por defecto "_gcl", configurable
+// en el Conversion Linker) y sus equivalentes server-side FPGCLAW/DC/GB/GS.
+// _gcl_au / FPAU es el Conversion Linker (first-party ID), NO un click ID.
+const CA_CLICKID_SUFFIXES = {
+  aw: { label: "Google Ads (gclid)", param: "gclid" },
+  dc: { label: "Search Ads 360 / Display (dclid)", param: "dclid" },
+  gb: { label: "wbraid (iOS web-to-app)", param: "wbraid" },
+  ag: { label: "gbraid (iOS app-to-web)", param: "gbraid" },
+  gs: { label: "gad_source", param: "gad_source" },
+};
+
+function caParseClickCookie(c) {
+  // GCL.<timestamp>.<clickid>  (aw, dc, gb) · 2.<v>.k…$i<ts>…  (ag, gs)
+  const m = (c.value || "").match(/^GCL\.(\d+)\.(.+)$/);
+  if (m) return { id: m[2], capturedSec: parseInt(m[1], 10) };
+  const m2 = (c.value || "").match(/\$i(\d{9,11})/);
+  return { id: c.value || "", capturedSec: m2 ? parseInt(m2[1], 10) : null };
+}
+
 function caExtractAdsInfo(cookies) {
-  const out = { aw: null, au: null, gb: null };
-  const aw = cookies.find(c => c.name === "_gcl_aw");
-  if (aw) {
-    const m = (aw.value || "").match(/^GCL\.(\d+)\.(.+)$/);
-    out.aw = { gclid: m ? m[2] : (aw.value || ""), capturedSec: m ? parseInt(m[1], 10) : null, cookie: aw };
+  const out = { au: null, ids: {} };
+  for (const c of cookies) {
+    // Conversion Linker (first-party id)
+    if (c.name === "_gcl_au" || c.name === "FPAU") {
+      const parts = (c.value || "").split(".");
+      const ts = parts.length >= 4 ? parseInt(parts[3], 10) : null;
+      out.au = { createdSec: ts && ts > 1000000000 ? ts : null, cookie: c, name: c.name, sgtm: c.name === "FPAU" };
+      continue;
+    }
+    // Server-side: FPGCLAW / FPGCLDC / FPGCLGB / FPGCLGS
+    let mm = c.name.match(/^FPGCL(AW|DC|GB|GS)$/i);
+    if (mm) {
+      const suf = mm[1].toLowerCase();
+      if (!out.ids[suf]) out.ids[suf] = Object.assign({ cookie: c, name: c.name, sgtm: true }, caParseClickCookie(c));
+      continue;
+    }
+    // Client-side con prefijo configurable: <prefijo>_aw, _dc, _gb, _ag, _gs
+    mm = c.name.match(/^(.+)_(aw|dc|gb|ag|gs)$/i);
+    if (mm) {
+      const suf = mm[2].toLowerCase();
+      const valid = /^GCL\.\d+\./.test(c.value || "") || /^2\.\d+\.k/.test(c.value || "");
+      if (valid && !out.ids[suf]) {
+        out.ids[suf] = Object.assign({ cookie: c, name: c.name, prefix: mm[1], sgtm: false }, caParseClickCookie(c));
+      }
+    }
   }
-  const au = cookies.find(c => c.name === "_gcl_au");
-  if (au) {
-    const parts = (au.value || "").split(".");
-    const ts = parts.length >= 4 ? parseInt(parts[3], 10) : null;
-    out.au = { createdSec: ts && ts > 1000000000 ? ts : null, cookie: au };
-  }
-  const gb = cookies.find(c => c.name === "_gcl_gb");
-  if (gb) {
-    const m = (gb.value || "").match(/^GCL\.(\d+)\.(.+)$/);
-    out.gb = { wbraid: m ? m[2] : (gb.value || ""), capturedSec: m ? parseInt(m[1], 10) : null, cookie: gb };
-  }
+  // compat: .aw sigue disponible como antes
+  out.aw = out.ids.aw || null;
+  out.gb = out.ids.gb || null;
   return out;
 }
 
@@ -4001,9 +4054,18 @@ function caClickIdsFromTimeline(timeline) {
     if ((e.type === "nav" || e.type === "xdomain") && e.url) {
       try {
         const u = new URL(e.url);
-        ["gclid", "gbraid", "wbraid", "dclid"].forEach(function (k) {
+        const gclsrc = u.searchParams.get("gclsrc") || "";
+        ["gclid", "gbraid", "wbraid", "dclid", "gad_source"].forEach(function (k) {
           const v = u.searchParams.get(k);
-          if (v) found.push({ param: k, value: v, ts: e.ts });
+          if (!v) return;
+          // Cookie que Google debería crear según el parámetro y gclsrc
+          let expect = null;
+          if (k === "gclid") expect = /^(ds|3p\.ds)$/.test(gclsrc) ? "dc" : "aw";
+          else if (k === "dclid") expect = "dc";
+          else if (k === "wbraid") expect = "gb";
+          else if (k === "gbraid") expect = "ag";
+          else if (k === "gad_source") expect = "gs";
+          found.push({ param: k, value: v, ts: e.ts, gclsrc: gclsrc, expect: expect });
         });
       } catch (err) {}
     }
@@ -4245,12 +4307,17 @@ function caPageConversionScan() {
     var entries = performance.getEntriesByType("resource");
     for (var i = 0; i < entries.length; i++) {
       var name = entries[i].name;
-      var isGa4 = name.indexOf("/g/collect") !== -1;
-      var isAds = /googleadservices\.com|googleads\.g\.doubleclick\.net/.test(name) && name.indexOf("/pagead/") !== -1;
-      var isCcm = name.indexOf("/ccm/collect") !== -1;
+      var u;
+      try { u = new URL(name); } catch (e0) { continue; }
+      var host = u.hostname, path = u.pathname;
+      var isGa4 = path.indexOf("/g/collect") !== -1;
+      var isCcm = path.indexOf("/ccm/collect") !== -1;
+      // Incluye google.com/pagead/1p-conversion (Safari/Firefox) y pagead2.googlesyndication
+      var isAds = /(^|\.)(googleadservices\.com|googleads\.g\.doubleclick\.net|pagead2\.googlesyndication\.com)$/.test(host) ||
+                  (/(^|\.)google\.[a-z.]{2,6}$/.test(host) && path.indexOf("/pagead/") !== -1);
+      isAds = isAds && /\/pagead\/(1p-)?(view.?through)?conversion\//.test(path);
       if (!isGa4 && !isAds && !isCcm) continue;
       try {
-        var u = new URL(name);
         var ts = Math.round((performance.timeOrigin || 0) + entries[i].startTime);
         if (isGa4) {
           var en = u.searchParams.get("en");
@@ -4267,15 +4334,23 @@ function caPageConversionScan() {
           // Los pings sin label son remarketing/config de página — ruido.
           var label = u.searchParams.get("label");
           if (!label) continue;
-          var m = u.pathname.match(/\/(?:1p-)?(?:view.?through)?conversion\/(\d{6,})/);
+          var m = path.match(/\/(?:1p-)?(?:view.?through)?conversion\/(\d{6,})/);
           var em = u.searchParams.get("em") || "";
+          // Cualquier click ID reconocido por Ads: gclid/gclaw, wbraid/gclgb, gbraid, dclid/gcldc
+          var clickParams = ["gclaw", "gclid", "gclgb", "wbraid", "gbraid", "gcldc", "dclid"];
+          var clickFound = null;
+          for (var ci = 0; ci < clickParams.length; ci++) {
+            if (u.searchParams.get(clickParams[ci])) { clickFound = clickParams[ci]; break; }
+          }
           out.push({
             kind: "ads", url: name, ts: ts,
             awId: m ? "AW-" + m[1] : null,
             value: u.searchParams.get("value"),
             currency: u.searchParams.get("currency_code"),
             label: label,
-            hasClickId: !!(u.searchParams.get("gclaw") || u.searchParams.get("gclid") || u.searchParams.get("gclgb")),
+            transactionId: u.searchParams.get("oid") || u.searchParams.get("transaction_id"),
+            hasClickId: !!clickFound,
+            clickIdParam: clickFound,
             enhanced: em.length > 8,
             ccm: isCcm,
           });
@@ -4357,15 +4432,27 @@ function caComputeStatus(cookies, alerts, timeline) {
 
   // Problemas de atribución Google Ads
   const ads = caExtractAdsInfo(cookies);
-  const seenGclids = caClickIdsFromTimeline(timeline).filter(f => f.param === "gclid").map(f => f.value);
-  const lastGclid = seenGclids.length ? { value: seenGclids[seenGclids.length - 1] } : null;
-  const gclLost = timeline.some(e => e.type === "cookie" && e.removed && /^_gcl_/.test(e.name || ""));
-  const adsProblems = [];
-  if (gclLost) adsProblems.push("se ha borrado una cookie _gcl_* (atribución Ads)");
-  if (lastGclid && !ads.aw) adsProblems.push("gclid en la URL pero _gcl_aw no se creó");
-  // Solo es problema si la cookie guarda un gclid que NO se vio en NINGÚN aterrizaje
-  // de este audit (varios gclids en una sesión de pruebas es normal).
-  else if (seenGclids.length && ads.aw && seenGclids.indexOf(ads.aw.gclid) === -1) adsProblems.push("_gcl_aw guarda un gclid que no se ha visto en ninguna URL de este audit");
+  const clickIds = caClickIdsFromTimeline(timeline);
+  const gclLost = timeline.some(e => e.type === "cookie" && e.removed &&
+    /^(_\w+_(aw|dc|gb|ag|gs)|FPGCL|FPAU|_gcl_au)$/i.test(e.name || ""));
+  // ¿El consentimiento publicitario está denegado? Entonces que no se cree la cookie
+  // es el comportamiento DOCUMENTADO de Consent Mode, no un fallo de implementación.
+  const adsDenied = !!(lastConsentData && lastConsentData.signals &&
+    ((lastConsentData.signals.ad_storage && lastConsentData.signals.ad_storage.current === "denied") ||
+     (lastConsentData.signals.ad_user_data && lastConsentData.signals.ad_user_data.current === "denied")));
+  const adsProblems = [], adsWarnings = [];
+  if (gclLost) adsProblems.push("se ha borrado una cookie de atribución de Ads");
+  // Por cada click ID visto, comprobar que existe su cookie esperada
+  const missing = [];
+  clickIds.forEach(function (f) {
+    if (!f.expect) return;
+    if (!ads.ids[f.expect]) missing.push(f.param);
+  });
+  if (missing.length) {
+    const uniq = missing.filter((v, i, a) => a.indexOf(v) === i).join(", ");
+    if (adsDenied) adsWarnings.push(uniq + " en la URL sin cookie de atribución: el consentimiento publicitario está denegado (comportamiento esperado de Consent Mode)");
+    else adsProblems.push(uniq + " en la URL pero no se creó su cookie de atribución");
+  }
 
   const gaProblems = [];
   if (gaLost) gaProblems.push("se ha borrado una cookie de GA4");
@@ -4377,6 +4464,7 @@ function caComputeStatus(cookies, alerts, timeline) {
   }
   if (gaProblems.length) return { cls: "ca-status-err", text: "Sesión GA4 en riesgo", reason: gaProblems[0] };
   if (adsProblems.length) return { cls: "ca-status-err", text: "Atribución Ads en riesgo", reason: adsProblems[0] };
+  if (adsWarnings.length) return { cls: "ca-status-warn", text: "Atribución pendiente de consentimiento", reason: adsWarnings[0] };
   if (warns.length) return { cls: "ca-status-warn", text: "Sesión con avisos", reason: warns[0].title };
   if (hasGa && hasSess) return { cls: "ca-status-ok", text: "Sesión GA4 estable", reason: "" };
   if (hasGa) return { cls: "ca-status-warn", text: "Sin sesión activa aún", reason: "hay _ga pero no _ga_* — interactúa con la web y re-escanea" };
@@ -4492,59 +4580,65 @@ function caRenderSesion(cookies, alerts, timeline) {
   // --- Atribución Google Ads ---
   const ads = caExtractAdsInfo(cookies);
   const clickIds = caClickIdsFromTimeline(timeline || []);
-  const lastGclid = clickIds.filter(f => f.param === "gclid").pop();
+  const sufKeys = Object.keys(ads.ids);
+  const adsDeniedUi = !!(lastConsentData && lastConsentData.signals &&
+    ((lastConsentData.signals.ad_storage && lastConsentData.signals.ad_storage.current === "denied") ||
+     (lastConsentData.signals.ad_user_data && lastConsentData.signals.ad_user_data.current === "denied")));
   html += '<div class="ca-sec-title">Atribución Google Ads</div>';
   html += '<div class="ca-cards">';
 
-  if (!ads.aw && !ads.au && !ads.gb && !lastGclid) {
+  if (!sufKeys.length && !ads.au && !clickIds.length) {
     html += '<div class="ca-card"><span class="ca-card-label">Google Ads</span>' +
       '<span class="ca-card-value ca-muted">sin señales</span>' +
-      '<span class="ca-card-meta">para probar: aterriza en la web con <span class="ca-mono">?gclid=TEST123</span> y comprueba que se crea _gcl_aw</span></div>';
+      '<span class="ca-card-meta">para probar: aterriza con <span class="ca-mono">?gclid=TEST123</span> (o wbraid/gbraid/dclid) y comprueba que se crea la cookie de atribución</span></div>';
   } else {
-    // gclid en URL sin guardar → el fallo de atribución clásico
-    if (lastGclid && !ads.aw) {
-      html += '<div class="ca-card ca-card-err"><span class="ca-card-label">Click ID (gclid)</span>' +
-        '<span class="ca-card-value ca-mono">' + escapeHtml(caTruncId(lastGclid.value)) + '</span>' +
-        '<span class="ca-card-meta">visto en la URL pero NO guardado en _gcl_aw — la conversión no se atribuirá (¿Conversion Linker? ¿consent?)</span></div>';
-    }
-    if (ads.aw) {
-      const seen = clickIds.filter(f => f.param === "gclid").map(f => f.value);
-      const uniq = seen.filter(function (v, i) { return seen.indexOf(v) === i; });
+    const missUniq = [];
+    clickIds.forEach(function (f) {
+      if (!f.expect || ads.ids[f.expect]) return;
+      if (!missUniq.some(function (x) { return x.param === f.param; })) missUniq.push(f);
+    });
+    missUniq.forEach(function (f) {
+      const expName = (CA_CLICKID_SUFFIXES[f.expect] || {}).label || f.expect;
+      html += '<div class="ca-card ' + (adsDeniedUi ? "ca-card-warn" : "ca-card-err") + '">' +
+        '<span class="ca-card-label">Click ID (' + escapeHtml(f.param) + ')' + (f.gclsrc ? ' · gclsrc=' + escapeHtml(f.gclsrc) : '') + '</span>' +
+        '<span class="ca-card-value ca-mono">' + escapeHtml(caTruncId(f.value)) + '</span>' +
+        '<span class="ca-card-meta">' + (adsDeniedUi
+          ? 'visto en la URL y aún sin cookie <span class="ca-mono">_gcl_' + f.expect + '</span> — el consentimiento publicitario está denegado: es el comportamiento esperado de Consent Mode. Acepta el banner y re-escanea.'
+          : 'visto en la URL pero NO se guardó en <span class="ca-mono">_gcl_' + f.expect + '</span> (' + escapeHtml(expName) + ') — la conversión no se atribuirá. Revisa el Conversion Linker.') +
+        '</span></div>';
+    });
+    sufKeys.forEach(function (suf) {
+      const info = ads.ids[suf];
+      const meta = CA_CLICKID_SUFFIXES[suf] || { label: suf };
+      const seen = clickIds.filter(function (f) { return f.expect === suf; }).map(function (f) { return f.value; });
+      const uniq = seen.filter(function (v, i2, a) { return a.indexOf(v) === i2; });
       let match = "";
       if (uniq.length) {
-        if (uniq.indexOf(ads.aw.gclid) !== -1) {
-          match = uniq.length > 1
-            ? " · coincide con un aterrizaje ✓ (" + uniq.length + " gclids distintos en esta sesión)"
-            : " · coincide con la URL ✓";
-        } else {
-          match = " · no coincide con ningún gclid visto en este audit ⚠";
-        }
+        match = uniq.indexOf(info.id) !== -1
+          ? (uniq.length > 1 ? " · coincide con un aterrizaje ✓ (" + uniq.length + " distintos en esta sesión)" : " · coincide con la URL ✓")
+          : " · no coincide con ningún click ID visto en este audit ⚠";
       }
       const bits = [];
-      if (ads.aw.capturedSec) bits.push('capturado <span data-ca-since-ts="' + ads.aw.capturedSec + '">' + caRelTime(ads.aw.capturedSec, nowSec) + '</span>');
-      if (ads.aw.cookie.expirationDate) bits.push("expira en " + formatCookieExpiry(ads.aw.cookie.expirationDate));
+      if (info.capturedSec) bits.push('capturado <span data-ca-since-ts="' + info.capturedSec + '">' + caRelTime(info.capturedSec, nowSec) + '</span>');
+      if (info.cookie.expirationDate) bits.push("expira en " + formatCookieExpiry(info.cookie.expirationDate));
+      if (info.sgtm) bits.push("server-side");
       html += '<div class="ca-card' + (match.indexOf("⚠") !== -1 ? " ca-card-warn" : "") + '">' +
-        '<span class="ca-card-label">Click ID (_gcl_aw)</span>' +
-        '<span class="ca-card-value ca-mono" title="' + escapeHtml(ads.aw.gclid) + '">' + escapeHtml(caTruncId(ads.aw.gclid)) + '</span>' +
+        '<span class="ca-card-label">' + escapeHtml(meta.label) + ' · ' + escapeHtml(info.name) + '</span>' +
+        '<span class="ca-card-value ca-mono" title="' + escapeHtml(info.id) + '">' + escapeHtml(caTruncId(info.id)) + '</span>' +
         '<span class="ca-card-meta">' + bits.join(" · ") + escapeHtml(match) + '</span></div>';
-    }
-    if (ads.gb) {
-      html += '<div class="ca-card"><span class="ca-card-label">wbraid (_gcl_gb)</span>' +
-        '<span class="ca-card-value ca-mono" title="' + escapeHtml(ads.gb.wbraid) + '">' + escapeHtml(caTruncId(ads.gb.wbraid)) + '</span>' +
-        (ads.gb.cookie.expirationDate ? '<span class="ca-card-meta">expira en ' + formatCookieExpiry(ads.gb.cookie.expirationDate) + '</span>' : '') +
-        '</div>';
-    }
+    });
     if (ads.au) {
       const auBits = [];
       if (ads.au.createdSec) auBits.push('creado <span data-ca-since-ts="' + ads.au.createdSec + '">' + caRelTime(ads.au.createdSec, nowSec) + '</span>');
       if (ads.au.cookie.expirationDate) auBits.push("expira en " + formatCookieExpiry(ads.au.cookie.expirationDate));
-      html += '<div class="ca-card"><span class="ca-card-label">Conversion Linker (_gcl_au)</span>' +
+      if (ads.au.sgtm) auBits.push("server-side");
+      html += '<div class="ca-card"><span class="ca-card-label">Conversion Linker · ' + escapeHtml(ads.au.name) + '</span>' +
         '<span class="ca-card-value">activo</span>' +
         (auBits.length ? '<span class="ca-card-meta">' + auBits.join(" · ") + '</span>' : '') + '</div>';
-    } else if (ads.aw || lastGclid) {
+    } else if (sufKeys.length || clickIds.length) {
       html += '<div class="ca-card ca-card-warn"><span class="ca-card-label">Conversion Linker (_gcl_au)</span>' +
         '<span class="ca-card-value ca-muted">no detectado</span>' +
-        '<span class="ca-card-meta">sin él, la atribución cross-domain de Ads se pierde — revisa el tag Conversion Linker en GTM</span></div>';
+        '<span class="ca-card-meta">es la cookie first-party que enlaza el clic con la conversión — revisa el tag Conversion Linker en GTM</span></div>';
     }
   }
   html += '</div>';
@@ -4581,7 +4675,8 @@ function caRenderSesion(cookies, alerts, timeline) {
           '<div class="ca-conv-l2">' +
           '<span class="ca-conv-meta">' + escapeHtml(h.awId || "AW-?") + '</span>' +
           '<span class="ca-conv-meta ca-mono" title="conversion label — identifica el objetivo en Google Ads">' + escapeHtml(h.label || "") + '</span>' +
-          '<span class="ca-conv-meta">' + (h.hasClickId ? "gclid ✓" : "sin gclid") + '</span>' +
+          '<span class="ca-conv-meta" title="' + (h.hasClickId ? "click ID presente: " + h.clickIdParam : "la conversión no lleva ningún click ID (gclid/wbraid/gbraid/dclid)") + '">' + (h.hasClickId ? (h.clickIdParam || "click ID") + " ✓" : "sin click ID") + '</span>' +
+          (h.transactionId ? '<span class="ca-conv-meta ca-mono" title="transaction_id / oid — usado para deduplicar">' + escapeHtml(h.transactionId) + '</span>' : '') +
           '<span class="ca-conv-ec' + (h.enhanced ? "" : " ca-conv-ec-off") + '">' + (h.enhanced ? "enhanced ✓" : "sin enhanced") + '</span>' +
           (h.endpoints > 1 ? '<span class="ca-conv-meta" title="endpoints que recibieron este mismo objetivo">×' + h.endpoints + '</span>' : '') +
           '</div>' +
@@ -4730,8 +4825,8 @@ const CA_HELP_CONTENT = `
       <dt><code>_ga_&lt;ID&gt;</code></dt>
       <dd>Cookie de sesión de GA4 (una por propiedad). Contiene <code>session_start</code>, <code>session_count</code> y el último hit. Expira por inactividad a los 30 min por defecto.</dd>
 
-      <dt><code>_gcl_aw</code></dt>
-      <dd>Click ID de Google Ads. Se crea al aterrizar con <code>?gclid=…</code> (formato <code>GCL.&lt;ts&gt;.&lt;gclid&gt;</code>, 90 días). Si no se crea, la conversión no se atribuye a la campaña.</dd>
+      <dt><code>_gcl_aw</code>, <code>_gcl_dc</code>, <code>_gcl_gb</code>, <code>_gcl_ag</code>, <code>_gcl_gs</code></dt>
+      <dd>Cookies de click ID de Google Ads (90 días, formato <code>GCL.&lt;ts&gt;.&lt;id&gt;</code>). Se crean al aterrizar con <code>?gclid=</code> (→ <code>_aw</code>, o <code>_dc</code> si <code>gclsrc=ds</code>), <code>?dclid=</code> (→ <code>_dc</code>), <code>?wbraid=</code> (→ <code>_gb</code>), <code>?gbraid=</code> (→ <code>_ag</code>) o <code>?gad_source=</code> (→ <code>_gs</code>). El prefijo <code>_gcl</code> es configurable en el Conversion Linker, y con server-side GTM son <code>FPGCLAW</code>/<code>FPGCLDC</code>/… Si no se crean, la conversión no se atribuye — salvo que el consentimiento publicitario esté denegado, donde es el comportamiento esperado.</dd>
 
       <dt><code>_gcl_au</code></dt>
       <dd>Conversion Linker de Google Ads. 90 días. Permite atribuir conversiones entre dominios.</dd>
