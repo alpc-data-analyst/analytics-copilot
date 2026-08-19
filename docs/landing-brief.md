@@ -16,7 +16,7 @@ Analytics Copilot es una extensión de Chrome (Manifest V3) con **9 herramientas
 | Repositorio (código, MIT) | https://github.com/alpc-data-analyst/analytics-copilot |
 | Descarga (ZIP, release) | https://github.com/alpc-data-analyst/analytics-copilot/releases/latest |
 | Política de privacidad | https://github.com/alpc-data-analyst/analytics-copilot/blob/main/PRIVACY.md |
-| Chrome Web Store | **PENDIENTE de revisión** — dejar un botón "Añadir a Chrome (próximamente)" deshabilitado o un placeholder fácil de actualizar |
+| Chrome Web Store | https://chromewebstore.google.com/detail/analytics-copilot/icnecmnkghkklcjmolmmcljdodeglfpe — **YA APROBADA**: el botón principal debe ser "Añadir a Chrome" apuntando aquí |
 | LinkedIn del autor | https://www.linkedin.com/in/antonio-luis-perez-carmona/ |
 
 ## Imágenes (URLs públicas, listas para usar)
@@ -65,6 +65,10 @@ Todas las capturas van sobre fondo slate `#1F2937` — combinan bien sobre fondo
 - Meta description: `9 herramientas para auditar GA4, GTM, Google Ads y Consent Mode desde Chrome: sesión, atribución, conversiones y consentimiento en tiempo real. Gratis y open source.`
 - OG image: `docs/screenshots/promo-marquee-1400x560.png`
 
-## Mantenimiento futuro
+## Actualización pendiente en la landing
 
-Cuando la Chrome Web Store apruebe la extensión, sustituir el placeholder por el botón real "Añadir a Chrome" con la URL de la ficha.
+La extensión **ya está aprobada en la Chrome Web Store**. Sustituir el botón placeholder "Chrome Web Store · próximamente" por el CTA principal:
+
+**Añadir a Chrome** → https://chromewebstore.google.com/detail/analytics-copilot/icnecmnkghkklcjmolmmcljdodeglfpe
+
+El botón de descarga desde GitHub pasa a ser secundario ("o instálala en modo desarrollador desde GitHub").

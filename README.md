@@ -1,5 +1,7 @@
 # Analytics Copilot
 
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Añadir%20a%20Chrome-2563EB?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/analytics-copilot/icnecmnkghkklcjmolmmcljdodeglfpe)
+
 Extensión de Chrome (Manifest V3) con **9 herramientas para QA de analítica web**: auditar Consent Mode, verificar la atribución de Google Ads de punta a punta, vigilar la sesión de GA4, generar eventos de dataLayer y más. Pensada para quien implementa y depura GA4 / GTM / Google Ads a diario.
 
 Funciona como **popup** en la barra de Chrome y como **panel dentro de DevTools** (pestaña "Analytics Copilot"), con un widget flotante que avisa de las features activas en la página.
@@ -20,16 +22,19 @@ Funciona como **popup** en la barra de Chrome y como **panel dentro de DevTools*
 | 📄 | **HTML** | Copia o descarga el HTML renderizado (DOM en vivo) de la página |
 | 📟 | **Consola** | Captura `console.*` y errores JS de la página (sobrevive a recargas) para copiarlos o descargarlos |
 
-## Instalación (2 minutos)
+## Instalación
 
-No está en la Chrome Web Store — se instala en modo desarrollador:
+### ⭐ Desde la Chrome Web Store (recomendado)
+
+**[➕ Añadir a Chrome](https://chromewebstore.google.com/detail/analytics-copilot/icnecmnkghkklcjmolmmcljdodeglfpe)** — instalación en un clic y actualizaciones automáticas.
+
+### Alternativa: modo desarrollador (para trastear con el código)
 
 1. **[⬇ Descarga el ZIP de la última versión](https://github.com/alpc-data-analyst/analytics-copilot/releases/latest)** y descomprímelo
 2. Abre `chrome://extensions/` y activa el **Modo de desarrollador** (interruptor arriba a la derecha)
 3. Pulsa **"Cargar descomprimida"** y selecciona la carpeta descomprimida
-4. Fija el icono 📍 en la barra — y si quieres el modo panel, abre DevTools (F12) → pestaña **Analytics Copilot**
 
-> ⚠ No muevas ni borres la carpeta después de instalar: Chrome carga la extensión desde ahí.
+> ⚠ En modo desarrollador, no muevas ni borres la carpeta: Chrome carga la extensión desde ahí.
 
 ## Ejemplo: auditar un clic de anuncio de Google Ads
 
