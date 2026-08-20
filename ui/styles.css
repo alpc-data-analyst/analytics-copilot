@@ -3509,3 +3509,24 @@ body.panel-mode .tab-content {
   color: #0a66c2;
   background: var(--primary-light);
 }
+
+/* Chip de elección del usuario (separa "vigente" de "ya eligió") */
+.cm-choice-chip {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 9px;
+  white-space: nowrap;
+}
+
+.cm-choice-done {
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.cm-choice-pending {
+  background: hsl(45, 95%, 93%);
+  color: hsl(35, 90%, 32%);
+  border: 1px dashed hsl(45, 80%, 60%);
+}

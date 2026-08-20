@@ -2539,7 +2539,21 @@ function scanConsentMode() {
     adsDataRedaction: null,
     regions: [],
     v2: false,
+    // Contexto: distingue "la web no tiene Consent Mode" de "no pudimos leerlo"
+    hasDataLayer: false,
+    hasGoogleTagData: false,
+    hasGoogleTagScript: false,
   };
+
+  // ¿Hay gtag/GTM en el DOM aunque no veamos sus objetos?
+  try {
+    result.hasDataLayer = Array.isArray(window.dataLayer);
+    result.hasGoogleTagData = !!(window.google_tag_data);
+    var tagScripts = document.querySelectorAll(
+      'script[src*="googletagmanager.com/gtm.js"],script[src*="googletagmanager.com/gtag/js"],script[src*="/gtm.js"],script[src*="/gtag/js"]'
+    );
+    result.hasGoogleTagScript = tagScripts.length > 0;
+  } catch (e) {}
 
   // ¿Es un hit de Google que puede llevar estado de consentimiento?
   // Incluye google.com/pagead/1p-conversion (Safari/Firefox) y pagead2.googlesyndication.
@@ -2902,6 +2916,7 @@ const consentHistoryBody = document.getElementById("consentHistoryBody");
 const consentNetworkSection = document.getElementById("consentNetworkSection");
 const consentNetworkBody = document.getElementById("consentNetworkBody");
 const consentVersionChip = document.getElementById("consentVersionChip");
+const consentChoiceChip = document.getElementById("consentChoiceChip");
 const consentModeInfo = document.getElementById("consentModeInfo");
 const consentModeType = document.getElementById("consentModeType");
 const consentModeExtras = document.getElementById("consentModeExtras");
@@ -2970,6 +2985,16 @@ const CONSENT_AUDIT_RULES = [
     terminal: true,
     check: function (ctx) {
       if (!ctx.data || !ctx.data.detected || (!ctx.hasAnyDefault && !ctx.hasAnyUpdate)) {
+        var d = ctx.data || {};
+        var gcsHits = (d.networkHits || []).filter(function (h) { return h.gcs; });
+        // No acusar a la web si el problema es que no pudimos leer su estado
+        if (gcsHits.length > 0 || (d.hasGoogleTagScript && !d.hasDataLayer && !d.hasGoogleTagData)) {
+          return "No se ha podido leer el estado de Consent Mode (la pestaña se cargó antes de activar la extensión). Recarga la página y vuelve a escanear" +
+            (gcsHits.length ? " — los hits salen con gcs=" + gcsHits[gcsHits.length - 1].gcs + ", así que Consent Mode sí está activo." : ".");
+        }
+        if (!d.hasGoogleTagScript && !d.hasDataLayer && !d.hasGoogleTagData) {
+          return "No se detecta Google Tag ni GTM en esta página: no hay Consent Mode que auditar.";
+        }
         return "Consent Mode no está configurado en esta web. No se están respetando las categorías de consentimiento — GA4 y publicidad envían datos sin control.";
       }
     },
@@ -3301,25 +3326,44 @@ function renderConsentResults(data) {
     return s && s.update;
   });
   // No Consent Mode at all, or a stray event fired but no actual signals configured
-  var notConfigured = !data.detected || (!hasAnyDefault && !hasAnyUpdate);
+  var noConsentData = !data.detected || (!hasAnyDefault && !hasAnyUpdate);
+
+  // Un hit con gcs demuestra que Consent Mode SÍ está activo aunque no hayamos
+  // podido leer el estado (p.ej. pestaña abierta antes de instalar/activar la
+  // extensión: el snapshot del DOM no refleja lo que ya se ejecutó).
+  var hitsWithGcs = (data.networkHits || []).filter(function (h) { return h.gcs; });
+  var pageUnreadable = noConsentData && (hitsWithGcs.length > 0 ||
+    (data.hasGoogleTagScript && !data.hasDataLayer && !data.hasGoogleTagData));
+  var noGoogleTag = noConsentData && !pageUnreadable &&
+    !data.hasGoogleTagScript && !data.hasDataLayer && !data.hasGoogleTagData;
+  var notConfigured = noConsentData && !pageUnreadable && !noGoogleTag;
+
   // Defaults set but user hasn't decided yet
-  var awaiting = !notConfigured && !hasAnyUpdate;
+  var awaiting = !noConsentData && !hasAnyUpdate;
 
   // Banner — differentiate "implemented" from "consent granted"
   var diagText = "";
   var diagTone = "neutral";
-  if (notConfigured) {
+  if (pageUnreadable) {
+    consentBanner.className = "cm-banner cm-banner-pending";
+    consentBadge.textContent = "Recarga la página";
+    consentBadge.className = "cm-badge cm-badge-pending";
+    diagText = hitsWithGcs.length
+      ? "Se detectan hits con parámetro gcs (" + escapeHtml(hitsWithGcs[hitsWithGcs.length - 1].gcs) + "), así que Consent Mode está activo, pero no se puede leer su estado: la pestaña se cargó antes de activar la extensión. Recarga la página y vuelve a escanear."
+      : "Hay gtag/GTM en la página pero no se puede leer su estado de consentimiento: la pestaña se cargó antes de activar la extensión. Recarga la página y vuelve a escanear.";
+    diagTone = "pending";
+  } else if (noGoogleTag) {
+    consentBanner.className = "cm-banner cm-banner-unknown";
+    consentBadge.textContent = "Sin gtag/GTM";
+    consentBadge.className = "cm-badge cm-badge-inactive";
+    diagText = "No se detecta Google Tag ni GTM en esta página, así que no hay Consent Mode que auditar.";
+    diagTone = "neutral";
+  } else if (notConfigured) {
     consentBanner.className = "cm-banner cm-banner-alert";
     consentBadge.textContent = "No configurado";
     consentBadge.className = "cm-badge cm-badge-alert";
     diagText = "Sin Consent Mode: GA4 y Ads reciben datos sin control del usuario.";
     diagTone = "alert";
-  } else if (awaiting) {
-    consentBanner.className = "cm-banner cm-banner-pending";
-    consentBadge.textContent = "Pendiente";
-    consentBadge.className = "cm-badge cm-badge-pending";
-    diagText = "Sin decisión del usuario — se aplica el default. Acepta o rechaza en la web y re-escanea.";
-    diagTone = "pending";
   } else if (data.gcsCode === "G111") {
     consentBanner.className = "cm-banner cm-banner-granted";
     consentBadge.textContent = "Aceptado";
@@ -3351,6 +3395,30 @@ function renderConsentResults(data) {
     diagText = "Consent Mode implementado — estado personalizado o en transición.";
     diagTone = "neutral";
   }
+
+  // Chip de elección del usuario. El badge dice qué está VIGENTE ahora mismo;
+  // esto dice si el usuario ya decidió o si sigue aplicándose el default.
+  // Son dos preguntas distintas: una web cuyo CMP reemite el update al cargar y
+  // otra que espera al clic pueden tener el mismo estado vigente.
+  if (consentChoiceChip) {
+    if (notConfigured || pageUnreadable || noGoogleTag) {
+      consentChoiceChip.classList.add("hidden");
+    } else {
+      consentChoiceChip.classList.remove("hidden");
+      if (hasAnyUpdate) {
+        consentChoiceChip.textContent = "elección registrada";
+        consentChoiceChip.className = "cm-choice-chip cm-choice-done";
+        consentChoiceChip.title = "Se ha ejecutado gtag('consent','update',…): el usuario ya decidió (ahora o en una visita anterior recordada por el CMP).";
+        diagText += " El usuario ya ha decidido (hay update).";
+      } else {
+        consentChoiceChip.textContent = "sin elección aún";
+        consentChoiceChip.className = "cm-choice-chip cm-choice-pending";
+        consentChoiceChip.title = "No se ha ejecutado ningún gtag('consent','update',…): lo que ves es el estado por defecto, en vigor mientras el usuario no interactúe con el banner.";
+        diagText += " Aún sin decisión del usuario: es el estado por defecto, que está en vigor igualmente.";
+      }
+    }
+  }
+
   // El diagnóstico ya no ocupa espacio: va como tooltip del banner
   consentBanner.title = diagText;
 
@@ -3625,7 +3693,10 @@ if (consentHitsInfoBtn && consentHitsInfoPop) {
 function buildConsentReport(data) {
   var L = [];
   L.push("CONSENT MODE — " + (lastConsentHost || "página actual") + " — " + new Date().toLocaleString("es-ES"));
-  L.push("Estado: " + consentBadge.textContent + (data.gcsCode ? " (" + data.gcsCode + ")" : "") + " · Versión: " + (data.v2 ? "v2" : "v1") + (data.cmp ? " · CMP: " + data.cmp : ""));
+  var choseAlready = CONSENT_TYPES.some(function (ct) { var sg = data.signals[ct.key]; return sg && sg.update; });
+  L.push("Vigente: " + consentBadge.textContent + (data.gcsCode ? " (" + data.gcsCode + ")" : "") +
+         " · Elección del usuario: " + (choseAlready ? "registrada" : "pendiente (rige el default)") +
+         " · Versión: " + (data.v2 ? "v2" : "v1") + (data.cmp ? " · CMP: " + data.cmp : ""));
   L.push("wait_for_update: " + (data.waitForUpdate ? data.waitForUpdate + " ms" : "no detectado") +
          " · ads_data_redaction: " + (data.adsDataRedaction === null ? "no detectado" : data.adsDataRedaction ? "activo" : "off") +
          " · url_passthrough: " + (data.urlPassthrough === null ? "no detectado" : data.urlPassthrough ? "activo" : "off") +
