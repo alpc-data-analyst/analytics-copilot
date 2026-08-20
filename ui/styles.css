@@ -3530,3 +3530,21 @@ body.panel-mode .tab-content {
   color: hsl(35, 90%, 32%);
   border: 1px dashed hsl(45, 80%, 60%);
 }
+
+/* El grupo de la derecha del banner debe poder plegarse: con badge largo
+   (IMPLEMENTADO) + chip de elección superaba el ancho del popup (420px). */
+.cm-banner-right {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.cm-banner-label { min-width: 0; }
+
+.cm-badge,
+.cm-choice-chip { max-width: 100%; }
+
+.cm-choice-chip {
+  padding: 3px 6px;
+  font-size: 9px;
+}
