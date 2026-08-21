@@ -9,7 +9,7 @@ manifest.json          Manifest V3. Permisos mínimos al instalar, opcionales ba
 background.js          Service Worker. Hub central: mensajes, inyección, auditoría, Lab
 icons/                 Iconos de la extensión (logo.svg fuente + PNG 16/48/128 + icons.svg sprite fuente)
 ui/
-  popup.html           UI del popup (Inicio + 9 herramientas, sprite SVG incrustado)
+  popup.html           UI del popup (Inicio + 10 herramientas, sprite SVG incrustado)
   panel.html           Panel DevTools (misma UI en modo panel)
   popup.js             Lógica de todas las herramientas (popup y panel)
   styles.css           Estilos del popup y panel
@@ -23,7 +23,7 @@ content/
 
 ---
 
-## Herramientas (Inicio + 9)
+## Herramientas (Inicio + 10)
 
 ### 1. Inicio (Home)
 - Dashboard con estado de features activas (Lab, Time Travel)
@@ -69,12 +69,23 @@ content/
 - Bloqueo de requests por URL pattern (declarativeNetRequest)
 - Quick blocks: GTM, GA4, Ads, Meta, TikTok
 
-### 8. HTML Grabber
+### 8. Captura de página completa
+- `chrome.tabs.captureVisibleTab()` solo fotografía el viewport, así que se hace scroll
+  por tramos, se captura cada uno y se cosen en un `<canvas>` dentro del popup
+- Oculta los elementos `position: fixed`/`sticky` a partir del segundo tramo (opcional)
+  para que cabeceras y banners no se repitan a lo largo de la imagen
+- Salvaguardas: máximo 60 tramos, si el alto supera ~32.000 px baja a escala 1x
+  (límite de canvas de Chrome), reintentos ante el límite de frecuencia de
+  `captureVisibleTab`, y restauración del scroll original pase lo que pase
+- Salida: vista previa, descarga PNG, copia al portapapeles y apertura en pestaña
+- No requiere permisos nuevos (usa `activeTab`) y la imagen nunca sale del navegador
+
+### 9. HTML Grabber
 - Captura el HTML renderizado (DOM en vivo) de la página actual
 - Copiar al portapapeles o descargar como `.html`
 - Vista previa del código en un textarea
 
-### 9. Eventos GA4 (generador dataLayer)
+### 10. Eventos GA4 (generador dataLayer)
 - Generador de snippets `dataLayer.push()` para el funnel ecommerce GA4 completo
   (view_item_list → … → purchase/refund) y eventos recomendados (login, sign_up, search…)
 - Esquemas declarativos en `DL_EVENT_SCHEMAS` (popup.js) — añadir un evento = añadir un objeto
@@ -82,7 +93,7 @@ content/
 - Snippet editable, copiar al portapapeles o "Push a la página" (executeScript MAIN world)
 - Esquemas basados en la documentación oficial de eventos ecommerce de GA4
 
-### 10. Console Capture
+### 11. Console Capture
 - Captura `console.log/info/warn/error/debug` + errores JS de la página
 - Content script dinámico (`console-capture-cs.js`, world MAIN) registrado solo durante la captura
 - Los logs se guardan en `sessionStorage` de la página (sobreviven a recargas del mismo origen)

@@ -218,6 +218,11 @@
         <span class="home-label">Cookie Audit</span>
         <span class="home-desc">Monitoriza cookies y sesiones</span>
       </button>
+      <button class="home-card" data-tab="shot">
+        <span class="home-icon"><svg><use href="#i-camera"/></svg></span>
+        <span class="home-label">Captura</span>
+        <span class="home-desc">Pantallazo de la página completa</span>
+      </button>
       <button class="home-card" data-tab="html">
         <span class="home-icon"><svg><use href="#i-code"/></svg></span>
         <span class="home-label">HTML</span>
@@ -664,6 +669,43 @@
       </div>
 
       <div id="labStatus" class="lab-status hidden"></div>
+    </div>
+
+
+    <!-- ============================================= -->
+    <!-- TAB: Captura de página completa               -->
+    <!-- ============================================= -->
+    <div id="tabShot" class="tab-content hidden">
+
+      <div class="shot-controls">
+        <button id="shotCaptureBtn" class="btn btn-primary"><svg class="icon"><use href="#i-camera"/></svg><span>Capturar página completa</span></button>
+        <span id="shotUrl" class="tags-url"></span>
+      </div>
+
+      <label class="shot-opt">
+        <input type="checkbox" id="shotHideFixed" checked>
+        <span>Ocultar cabeceras y elementos fijos al hacer scroll</span>
+      </label>
+
+      <div id="shotProgress" class="shot-progress hidden">
+        <div class="shot-bar"><div id="shotBarFill" class="shot-bar-fill"></div></div>
+        <span id="shotProgressText" class="shot-progress-text"></span>
+      </div>
+
+      <div id="shotInfo" class="shot-info hidden">
+        <span id="shotMeta" class="shot-meta"></span>
+        <div class="shot-actions">
+          <button id="shotDownloadBtn" class="btn btn-small"><svg class="icon icon-sm"><use href="#i-save"/></svg><span>Descargar PNG</span></button>
+          <button id="shotCopyBtn" class="btn btn-small"><svg class="icon icon-sm"><use href="#i-clipboard"/></svg><span>Copiar</span></button>
+          <button id="shotOpenBtn" class="btn btn-small btn-ghost"><svg class="icon icon-sm"><use href="#i-eye"/></svg><span>Abrir</span></button>
+        </div>
+      </div>
+
+      <div id="shotPreviewWrap" class="shot-preview-wrap hidden"><img id="shotPreview" alt="Vista previa de la captura"></div>
+
+      <div id="shotEmpty" class="dl-empty">Pulsa "Capturar página completa" para hacer un pantallazo de toda la página, incluida la parte que queda fuera de pantalla.</div>
+
+      <div id="shotStatus" class="shot-status hidden"></div>
     </div>
 
     <!-- Status (shared across tabs) -->

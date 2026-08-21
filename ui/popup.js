@@ -72,7 +72,7 @@ function ICON_SVG(name) {
 const IS_PANEL = document.body.classList.contains("panel-mode");
 
 // ---- Home grid navigation ----
-const TAB_MAP = { tags: "tabTags", timetravel: "tabTimeTravel", cache: "tabCache", consent: "tabConsent", crossdomain: "tabCrossDomain", lab: "tabLab", html: "tabHtml", console: "tabConsole", events: "tabEvents" };
+const TAB_MAP = { tags: "tabTags", timetravel: "tabTimeTravel", cache: "tabCache", consent: "tabConsent", crossdomain: "tabCrossDomain", lab: "tabLab", html: "tabHtml", console: "tabConsole", events: "tabEvents", shot: "tabShot" };
 const homeGrid = document.getElementById("homeGrid");
 
 function navigateTo(tabKey, opts) {
@@ -97,6 +97,7 @@ function navigateTo(tabKey, opts) {
       if (tabKey === "lab") labLoadConfig();
       if (tabKey === "tags") runTagScan();
       if (tabKey === "console") consoleOnOpen();
+      if (tabKey === "shot") shotOnOpen();
       if (tabKey === "events") evEnsureInit();
     } catch (e) {
       console.error("[Copilot] Error al abrir la herramienta:", tabKey, e);
@@ -2150,6 +2151,281 @@ if (evResetBtn) evResetBtn.addEventListener("click", () => {
   evGenerate();
   showEvStatus("Campos limpiados", "success");
 });
+
+// =============================================
+// CAPTURA DE PÁGINA COMPLETA
+// =============================================
+// captureVisibleTab() solo fotografía el viewport, así que para tener la página
+// entera hacemos scroll por tramos, capturamos cada uno y los cosemos en un
+// canvas. Todo ocurre en local: la imagen nunca sale del navegador.
+
+const SHOT_MAX_SEGMENTS = 60;        // tope de seguridad para páginas infinitas
+const SHOT_SETTLE_MS = 320;          // espera tras hacer scroll (repintado + quota de captureVisibleTab)
+const SHOT_MAX_CANVAS_PX = 32000;    // límite práctico de alto de canvas en Chrome
+
+const shotCaptureBtn = document.getElementById("shotCaptureBtn");
+const shotUrl = document.getElementById("shotUrl");
+const shotHideFixed = document.getElementById("shotHideFixed");
+const shotProgress = document.getElementById("shotProgress");
+const shotBarFill = document.getElementById("shotBarFill");
+const shotProgressText = document.getElementById("shotProgressText");
+const shotInfo = document.getElementById("shotInfo");
+const shotMeta = document.getElementById("shotMeta");
+const shotDownloadBtn = document.getElementById("shotDownloadBtn");
+const shotCopyBtn = document.getElementById("shotCopyBtn");
+const shotOpenBtn = document.getElementById("shotOpenBtn");
+const shotPreviewWrap = document.getElementById("shotPreviewWrap");
+const shotPreview = document.getElementById("shotPreview");
+const shotEmpty = document.getElementById("shotEmpty");
+const shotStatus = document.getElementById("shotStatus");
+
+let shotBlob = null;
+let shotObjectUrl = null;
+let shotHostname = "";
+let shotBusy = false;
+
+function showShotStatus(text, type) {
+  if (!shotStatus) return;
+  shotStatus.textContent = text;
+  shotStatus.className = "shot-status " + (type || "");
+  shotStatus.classList.remove("hidden");
+  setTimeout(() => shotStatus.classList.add("hidden"), 4000);
+}
+
+function shotSetProgress(done, total) {
+  if (!shotProgress) return;
+  shotProgress.classList.remove("hidden");
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  shotBarFill.style.width = pct + "%";
+  shotProgressText.textContent = "Capturando " + done + " de " + total + " tramos…";
+}
+
+async function shotOnOpen() {
+  try {
+    const tabId = await getActiveTabId();
+    if (!tabId) return;
+    const t = await chrome.tabs.get(tabId);
+    if (t && t.url) shotHostname = new URL(t.url).hostname;
+    if (shotUrl) shotUrl.textContent = shotHostname;
+  } catch (e) {}
+}
+
+// --- Funciones que se ejecutan DENTRO de la página (world MAIN) ---
+
+function shotPageMetrics() {
+  const de = document.documentElement;
+  const b = document.body;
+  return {
+    scrollHeight: Math.max(de.scrollHeight, b ? b.scrollHeight : 0, de.clientHeight),
+    clientHeight: de.clientHeight,
+    clientWidth: de.clientWidth,
+    dpr: window.devicePixelRatio || 1,
+    scrollX: window.scrollX,
+    scrollY: window.scrollY,
+  };
+}
+
+// Prepara la página: desactiva scroll suave y (opcionalmente) oculta los
+// elementos fijos/pegajosos, que si no se repetirían en cada tramo.
+function shotPrepare(hideFixed) {
+  window.__acShot = { hidden: [], html: document.documentElement.style.scrollBehavior };
+  document.documentElement.style.scrollBehavior = "auto";
+  if (!hideFixed) return;
+  const all = document.querySelectorAll("body *");
+  for (let i = 0; i < all.length; i++) {
+    const el = all[i];
+    let cs;
+    try { cs = getComputedStyle(el); } catch (e) { continue; }
+    if (cs.position === "fixed" || cs.position === "sticky") {
+      window.__acShot.hidden.push([el, el.style.visibility]);
+    }
+  }
+}
+
+function shotSetFixedHidden(hidden) {
+  const st = window.__acShot;
+  if (!st) return;
+  for (let i = 0; i < st.hidden.length; i++) {
+    st.hidden[i][0].style.visibility = hidden ? "hidden" : (st.hidden[i][1] || "");
+  }
+}
+
+function shotScrollTo(y) {
+  window.scrollTo(0, y);
+  return window.scrollY;
+}
+
+function shotRestore(scrollX, scrollY) {
+  const st = window.__acShot;
+  if (st) {
+    for (let i = 0; i < st.hidden.length; i++) {
+      st.hidden[i][0].style.visibility = st.hidden[i][1] || "";
+    }
+    document.documentElement.style.scrollBehavior = st.html || "";
+    delete window.__acShot;
+  }
+  window.scrollTo(scrollX, scrollY);
+}
+
+// --- Orquestación (en el popup) ---
+
+function shotLoadImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("No se pudo leer un tramo de la captura"));
+    img.src = dataUrl;
+  });
+}
+
+const shotSleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function shotRun(tabId, run) {
+  const [res] = await chrome.scripting.executeScript(Object.assign({ target: { tabId }, world: "MAIN" }, run));
+  return res ? res.result : null;
+}
+
+async function captureFullPage() {
+  if (shotBusy) return;
+  if (!await ensureHostPermissions()) {
+    showShotStatus("Se necesitan permisos de acceso a la página", "error");
+    return;
+  }
+  const tabId = await getActiveTabId();
+  if (!tabId) { showShotStatus("No se pudo acceder a la pestaña", "error"); return; }
+
+  let tab;
+  try { tab = await chrome.tabs.get(tabId); } catch (e) {}
+  if (!tab || !tab.url || !tab.url.startsWith("http")) {
+    showShotStatus("Esta pestaña no es una página web", "error");
+    return;
+  }
+  shotHostname = new URL(tab.url).hostname;
+  if (shotUrl) shotUrl.textContent = shotHostname;
+
+  shotBusy = true;
+  shotCaptureBtn.disabled = true;
+  shotEmpty.classList.add("hidden");
+  shotInfo.classList.add("hidden");
+  shotPreviewWrap.classList.add("hidden");
+
+  let metrics = null;
+  try {
+    metrics = await shotRun(tabId, { func: shotPageMetrics });
+    if (!metrics) throw new Error("No se pudieron leer las medidas de la página");
+
+    const dprRaw = metrics.dpr || 1;
+    const viewport = metrics.clientHeight;
+    // Si la página es larguísima bajamos la escala; y si aun así no cabe en un
+    // canvas (Chrome no admite más de ~32.700 px de alto), recortamos tramos:
+    // más vale una captura parcial y avisada que un PNG en blanco.
+    const dpr = (metrics.scrollHeight * dprRaw > SHOT_MAX_CANVAS_PX) ? 1 : dprRaw;
+    const segsPorAltura = Math.ceil(metrics.scrollHeight / viewport);
+    const segsPorCanvas = Math.max(1, Math.floor(SHOT_MAX_CANVAS_PX / (viewport * dpr)));
+    const total = Math.min(segsPorAltura, SHOT_MAX_SEGMENTS, segsPorCanvas);
+    const truncada = total < segsPorAltura;
+
+    await shotRun(tabId, { func: shotPrepare, args: [!!shotHideFixed.checked] });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(metrics.clientWidth * dpr);
+    canvas.height = Math.round(Math.min(metrics.scrollHeight, viewport * total) * dpr);
+    const ctx = canvas.getContext("2d");
+
+    for (let i = 0; i < total; i++) {
+      const targetY = i * viewport;
+      const realY = await shotRun(tabId, { func: shotScrollTo, args: [targetY] });
+      // Los elementos fijos solo se ven en el primer tramo (si no, se repiten)
+      if (shotHideFixed.checked) {
+        await shotRun(tabId, { func: shotSetFixedHidden, args: [i > 0] });
+      }
+      await shotSleep(SHOT_SETTLE_MS);
+
+      let dataUrl = null;
+      for (let intento = 0; intento < 3 && !dataUrl; intento++) {
+        try {
+          dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+        } catch (e) {
+          // Chrome limita la frecuencia de captureVisibleTab: reintentamos
+          await shotSleep(600);
+        }
+      }
+      if (!dataUrl) throw new Error("Chrome bloqueó la captura (límite de frecuencia). Inténtalo de nuevo.");
+
+      const img = await shotLoadImage(dataUrl);
+      ctx.drawImage(img, 0, Math.round((realY || targetY) * dpr), Math.round(metrics.clientWidth * dpr), Math.round(viewport * dpr));
+      shotSetProgress(i + 1, total);
+    }
+
+    await shotRun(tabId, { func: shotRestore, args: [metrics.scrollX, metrics.scrollY] });
+
+    shotBlob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (shotObjectUrl) URL.revokeObjectURL(shotObjectUrl);
+    shotObjectUrl = URL.createObjectURL(shotBlob);
+
+    shotPreview.src = shotObjectUrl;
+    shotPreviewWrap.classList.remove("hidden");
+    shotMeta.textContent = canvas.width + " × " + canvas.height + " px · " +
+      (shotBlob.size > 1048576 ? (shotBlob.size / 1048576).toFixed(1) + " MB" : Math.round(shotBlob.size / 1024) + " KB") +
+      " · " + total + " tramo" + (total > 1 ? "s" : "");
+    shotInfo.classList.remove("hidden");
+    if (truncada) {
+      shotMeta.textContent += " · página recortada (" + total + " de " + segsPorAltura + " tramos: límite de imagen)";
+      showShotStatus("Captura lista, pero la página es demasiado larga y se ha recortado", "error");
+    } else {
+      showShotStatus("Captura lista", "success");
+    }
+  } catch (e) {
+    showShotStatus("Error: " + e.message, "error");
+    shotEmpty.classList.remove("hidden");
+    // Devolver la página a su sitio pase lo que pase
+    try {
+      if (metrics) await shotRun(tabId, { func: shotRestore, args: [metrics.scrollX, metrics.scrollY] });
+    } catch (e2) {}
+  } finally {
+    shotBusy = false;
+    shotCaptureBtn.disabled = false;
+    shotProgress.classList.add("hidden");
+  }
+}
+
+function shotFilename() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return (shotHostname || "captura") + "-" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) +
+    "-" + p(d.getHours()) + p(d.getMinutes()) + ".png";
+}
+
+function shotDownload() {
+  if (!shotBlob) return;
+  const a = document.createElement("a");
+  a.href = shotObjectUrl;
+  a.download = shotFilename();
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  showShotStatus("Descarga iniciada", "success");
+}
+
+async function shotCopy() {
+  if (!shotBlob) return;
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": shotBlob })]);
+    showShotStatus("Imagen copiada al portapapeles", "success");
+  } catch (e) {
+    showShotStatus("No se pudo copiar (usa Descargar)", "error");
+  }
+}
+
+function shotOpen() {
+  if (!shotObjectUrl) return;
+  chrome.tabs.create({ url: shotObjectUrl });
+}
+
+if (shotCaptureBtn) shotCaptureBtn.addEventListener("click", captureFullPage);
+if (shotDownloadBtn) shotDownloadBtn.addEventListener("click", shotDownload);
+if (shotCopyBtn) shotCopyBtn.addEventListener("click", shotCopy);
+if (shotOpenBtn) shotOpenBtn.addEventListener("click", shotOpen);
 
 // =============================================
 // TIME TRAVEL

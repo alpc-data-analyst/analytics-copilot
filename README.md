@@ -2,7 +2,7 @@
 
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Añadir%20a%20Chrome-2563EB?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/analytics-copilot/icnecmnkghkklcjmolmmcljdodeglfpe)
 
-Extensión de Chrome (Manifest V3) con **9 herramientas para QA de analítica web**: auditar Consent Mode, verificar la atribución de Google Ads de punta a punta, vigilar la sesión de GA4, generar eventos de dataLayer y más. Pensada para quien implementa y depura GA4 / GTM / Google Ads a diario.
+Extensión de Chrome (Manifest V3) con **10 herramientas para QA de analítica web**: auditar Consent Mode, verificar la atribución de Google Ads de punta a punta, vigilar la sesión de GA4, generar eventos de dataLayer y más. Pensada para quien implementa y depura GA4 / GTM / Google Ads a diario.
 
 Funciona como **popup** en la barra de Chrome y como **panel dentro de DevTools** (pestaña "Analytics Copilot"), con un widget flotante que avisa de las features activas en la página.
 
@@ -19,6 +19,7 @@ Funciona como **popup** en la barra de Chrome y como **panel dentro de DevTools*
 | ⏩ | **Time Travel** | Simula otra fecha/hora en el navegador (`Date` override) para probar configuraciones programadas |
 | 🔄 | **Cache** | Limpia cookies, storage, cache y service workers del sitio actual y recarga |
 | 🧪 | **Lab** | Inyecta un GTM de prueba, hace push al dataLayer (JSON) y bloquea requests por patrón |
+| 📸 | **Captura** | Pantallazo de la **página completa** (hace scroll y cose los tramos), ocultando cabeceras fijas para que no se repitan; descarga PNG o copia al portapapeles |
 | 📄 | **HTML** | Copia o descarga el HTML renderizado (DOM en vivo) de la página |
 | 📟 | **Consola** | Captura `console.*` y errores JS de la página (sobrevive a recargas) para copiarlos o descargarlos |
 
