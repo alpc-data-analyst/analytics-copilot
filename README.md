@@ -19,7 +19,7 @@ Funciona como **popup** en la barra de Chrome y como **panel dentro de DevTools*
 | ⏩ | **Time Travel** | Simula otra fecha/hora en el navegador (`Date` override) para probar configuraciones programadas |
 | 🔄 | **Cache** | Limpia cookies, storage, cache y service workers del sitio actual y recarga |
 | 🧪 | **Lab** | Inyecta un GTM de prueba, hace push al dataLayer (JSON) y bloquea requests por patrón |
-| 📸 | **Captura** | Pantallazo de la **página completa** (hace scroll y cose los tramos), ocultando cabeceras fijas para que no se repitan; descarga PNG o copia al portapapeles |
+| 📸 | **Captura** | Iconos en la cabecera: pantallazo de la **página completa** (hace scroll y cose los tramos), ocultando cabeceras fijas para que no se repitan. Guarda la última captura y la abre en un **editor** donde añadir flechas, cajas y texto —movibles después de crearlos— y **difuminar datos sensibles** antes de compartirla |
 | 📄 | **HTML** | Copia o descarga el HTML renderizado (DOM en vivo) de la página |
 | 📟 | **Consola** | Captura `console.*` y errores JS de la página (sobrevive a recargas) para copiarlos o descargarlos |
 

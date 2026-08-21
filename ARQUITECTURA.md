@@ -12,6 +12,8 @@ ui/
   popup.html           UI del popup (Inicio + 10 herramientas, sprite SVG incrustado)
   panel.html           Panel DevTools (misma UI en modo panel)
   popup.js             Lógica de todas las herramientas (popup y panel)
+  shot.html            Visor/editor de la última captura (pestaña propia)
+  shot.js              Anotaciones sobre la captura (flechas, cajas, texto, difuminado)
   styles.css           Estilos del popup y panel
   devtools.html        Página DevTools que carga el panel
   devtools.js          Registra el panel en DevTools
@@ -23,7 +25,7 @@ content/
 
 ---
 
-## Herramientas (Inicio + 10)
+## Herramientas (Inicio + 9 en el menú + Captura rápida en la cabecera)
 
 ### 1. Inicio (Home)
 - Dashboard con estado de features activas (Lab, Time Travel)
@@ -69,16 +71,57 @@ content/
 - Bloqueo de requests por URL pattern (declarativeNetRequest)
 - Quick blocks: GTM, GA4, Ads, Meta, TikTok
 
-### 8. Captura de página completa
+### 8. Captura de página completa (iconos de la cabecera)
+
+Sin tarjeta en el menú: tres iconos en la cabecera, disponibles en todas las pantallas —
+📷 `#quickShotBtn` (capturar), 💾 `#shotDownloadBtn` y 👁 `#shotOpenBtn` (los dos últimos
+aparecen solo cuando ya hay una captura guardada).
+
+**Motor de captura** (`captureFullPage` y ayudantes `shot*` en `ui/popup.js`)
 - `chrome.tabs.captureVisibleTab()` solo fotografía el viewport, así que se hace scroll
-  por tramos, se captura cada uno y se cosen en un `<canvas>` dentro del popup
-- Oculta los elementos `position: fixed`/`sticky` a partir del segundo tramo (opcional)
-  para que cabeceras y banners no se repitan a lo largo de la imagen
-- Salvaguardas: máximo 60 tramos, si el alto supera ~32.000 px baja a escala 1x
-  (límite de canvas de Chrome), reintentos ante el límite de frecuencia de
-  `captureVisibleTab`, y restauración del scroll original pase lo que pase
-- Salida: vista previa, descarga PNG, copia al portapapeles y apertura en pestaña
-- No requiere permisos nuevos (usa `activeTab`) y la imagen nunca sale del navegador
+  por tramos, se captura cada uno y se cosen en un `<canvas>`
+- `shotMeasure()` decide qué scrollea: el documento o un contenedor interno con
+  `overflow-y: auto` (GA4, SPAs). En ese caso recorta al rectángulo del contenedor
+- La escala se **deriva** de la imagen capturada (`img.width / innerWidth`), nunca se
+  asume `devicePixelRatio`; el ancho se toma de `documentElement.clientWidth` para
+  excluir la barra de scroll
+- Orden por tramo: scroll → esperar asentamiento → ocultar fijos → capturar. Los
+  elementos `fixed`/`sticky` se reescanean en **cada** tramo porque muchas webs vuelven
+  sticky la cabecera solo al hacer scroll. En modo contenedor se respetan los sticky más
+  altos que `cropH * 0.25` (columnas congeladas de tablas)
+- `shotPrimeLazy()` recorre la página antes de capturar para disparar el lazy load
+- Salvaguardas: máximo 60 tramos, escala 1x si el alto supera ~32.000 px (límite de
+  canvas de Chrome), reintentos ante el límite de frecuencia de `captureVisibleTab`,
+  y restauración del scroll original pase lo que pase
+- No requiere permisos nuevos (usa `activeTab`); la imagen nunca sale del navegador
+
+**Caché de la última captura**
+- El PNG se guarda como `Blob` en IndexedDB (`ac-shots` / `shots` / clave `last`) junto a
+  hostname, timestamp y nombre de fichero. Se usa IndexedDB y no `chrome.storage` porque
+  este obligaría a base64 (+33 % de tamaño) sobre imágenes de decenas de MB
+
+**Visor y editor** (`ui/shot.html` + `ui/shot.js`)
+- Herramientas: Mover, Flecha, Cuadrado, Texto y Difuminar, con 4 colores, deshacer
+  (Ctrl/⌘+Z), borrar elemento (Supr) y limpiar todo
+- Los elementos son **objetos**, no píxeles: se guardan en coordenadas naturales de la
+  imagen y se pueden seleccionar y arrastrar después de crearlos. Al insertar uno se
+  activa Mover automáticamente y queda seleccionado. Doble clic sobre un texto lo reedita
+  (dejarlo vacío lo borra). Detección de clic: rectángulo con tolerancia para cajas y
+  texto, distancia punto-segmento para flechas; gana el de más arriba en la pila
+- **Rendimiento — decisión clave**: no existe ningún canvas del tamaño de la imagen. Uno
+  de 2880×18522 ocupa ~200 MB y su alto supera el límite de textura de la GPU (16.384 px),
+  lo que fuerza a Chrome a rasterizar por CPU y hace inusable el editor. En su lugar el
+  fondo es un `<img>` (lo compone el navegador) y las anotaciones se pintan en **una capa
+  `position: fixed` del tamaño de lo visible** (~4 MP / 16 MB), con
+  `ctx.setTransform(S·dpr, 0, 0, S·dpr, offsetX, offsetY)` para seguir dibujando en
+  coordenadas naturales. Se redibuja con rAF al mover el ratón, al hacer scroll y al
+  editar, descartando lo que cae fuera de pantalla: **coste constante** sea cual sea el
+  alto de la captura
+- El difuminado muestrea de la imagen original y la pixela, así que en el PNG exportado el
+  dato es irrecuperable, no es un efecto visual reversible
+- La imagen a tamaño completo solo se compone una vez, al pulsar "Descargar PNG"
+- El campo de texto se enfoca en el siguiente frame y su `blur` se ignora durante 150 ms:
+  la acción por defecto del `mousedown` del canvas le robaba el foco y lo cerraba al nacer
 
 ### 9. HTML Grabber
 - Captura el HTML renderizado (DOM en vivo) de la página actual

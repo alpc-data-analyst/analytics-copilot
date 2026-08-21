@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Captura — Analytics Copilot</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="shot-page">
+  <div class="shot-page-bar">
+    <span class="shot-page-title"><img class="shot-page-logo" src="../icons/icon48.png" alt=""> Analytics Copilot</span>
+
+    <div id="shotTools" class="shot-tools">
+      <button class="shot-tool is-active" data-tool="move" title="Mover / seleccionar (arrastra un elemento; Supr lo borra)">✥</button>
+      <button class="shot-tool" data-tool="arrow" title="Flecha">➚</button>
+      <button class="shot-tool" data-tool="rect" title="Rectángulo">▭</button>
+      <button class="shot-tool" data-tool="text" title="Texto">T</button>
+      <button class="shot-tool" data-tool="blur" title="Difuminar datos sensibles">▩</button>
+      <span class="shot-tool-sep"></span>
+      <button class="shot-color is-active" data-color="#ef4444" title="Rojo" style="background:#ef4444"></button>
+      <button class="shot-color" data-color="#2563eb" title="Azul" style="background:#2563eb"></button>
+      <button class="shot-color" data-color="#16a34a" title="Verde" style="background:#16a34a"></button>
+      <button class="shot-color" data-color="#eab308" title="Amarillo" style="background:#eab308"></button>
+      <span class="shot-tool-sep"></span>
+      <button id="shotUndo" class="shot-tool" title="Deshacer (Ctrl+Z)">↶</button>
+      <button id="shotDelete" class="shot-tool" title="Borrar el elemento seleccionado (Supr)">🗑</button>
+      <button id="shotClear" class="shot-tool" title="Borrar todas las anotaciones">✕</button>
+    </div>
+
+    <span id="shotPageMeta" class="shot-page-meta"></span>
+    <button id="shotPageDownload" class="btn btn-small">Descargar PNG</button>
+  </div>
+
+  <div id="shotPageBody" class="shot-page-body">
+    <p class="shot-page-empty">Cargando la captura…</p>
+  </div>
+
+  <script src="shot.js"></script>
+</body>
+</html>
