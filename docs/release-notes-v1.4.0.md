@@ -1,0 +1,58 @@
+# Analytics Copilot v1.4.0 — notas de versión
+
+**Para**: el agente que mantiene antonioluisperez.com
+**Objetivo**: actualizar `antonioluisperez.com/analytics-copilot` con la novedad de la v1.4.0.
+**Contexto base**: el briefing completo de la página sigue siendo [`docs/landing-brief.md`](landing-brief.md), ya actualizado a 10 herramientas. Este documento solo describe **lo que cambia**.
+
+---
+
+## Resumen en una línea
+
+Analytics Copilot 1.4.0 añade **captura de página completa con editor de anotaciones**: fotografía la web entera haciendo scroll, y permite señalar con flechas, cajas y texto —y difuminar datos sensibles— antes de compartir la imagen.
+
+## Qué cambia en la página
+
+| Dónde | Cambio |
+|---|---|
+| Hero / pitch | "9 herramientas" → **"10 herramientas"** |
+| Grid de herramientas | Añadir una tarjeta nueva (texto abajo) |
+| Meta description SEO | `10 herramientas para auditar GA4, GTM, Google Ads y Consent Mode desde Chrome: sesión, atribución, conversiones, consentimiento y capturas anotadas. Gratis y open source.` |
+| Versión, si se muestra | 1.4.0 |
+
+Nada más se toca: enlaces, CTA de la Chrome Web Store, branding y el resto de secciones siguen igual.
+
+### Tarjeta nueva para el grid
+
+> 📸 **Captura** — Pantallazo de la **página completa**: hace scroll y cose la web entera en una sola imagen, ocultando cabeceras fijas para que no se repitan. Se abre en un editor donde señalar con flechas, cajas y texto, y **difuminar datos sensibles** (client_id, emails, transaction_id) antes de mandársela a un cliente.
+
+### Párrafo largo, por si hay sección de novedades
+
+> La v1.4.0 incorpora captura de página completa. `chrome.tabs.captureVisibleTab` solo fotografía lo visible, así que la extensión recorre la página por tramos, los captura y los cose en un canvas — incluso cuando quien scrollea no es el documento sino un contenedor interno, como en los informes de GA4. La última captura queda guardada y se abre en un editor de anotaciones: flechas, cajas y texto que se pueden mover y reeditar después de crearlos, y una herramienta de difuminado que **pixela muestreando la imagen original**, de modo que el dato queda irrecuperable en el PNG y no es un efecto visual reversible. Todo ocurre en el navegador: la imagen no se sube a ningún sitio.
+
+## Ángulo de comunicación recomendado
+
+Merece un pequeño destacado, no solo una tarjeta más, por el contexto: **Google retiró GoFullPage de la Chrome Web Store por incumplir la política de privacidad**, y mucha gente de analítica la usaba a diario para documentar hallazgos. Analytics Copilot cubre ese hueco **sin añadir un solo permiso nuevo** y sin que la imagen salga del navegador. Es el argumento fuerte: el flujo completo —detectar el problema, documentarlo y tapar los datos del cliente— ocurre dentro de la misma herramienta, sin conceder acceso a un tercero.
+
+Sugerencia de encaje: añadirlo al final de la sección "el flujo estrella", como cierre natural — *auditas el clic de anuncio, ves la conversión y te llevas la captura anotada para el informe.*
+
+## Imágenes
+
+⚠ **Dos avisos importantes antes de tocar las imágenes:**
+
+1. **Todavía no hay captura del editor de anotaciones.** No inventes ni generes una: si hace falta ilustrar la sección, usa las existentes o deja la tarjeta sin imagen hasta que Antonio suba una.
+2. `docs/screenshots/menu.jpg` es **anterior** a esta versión: no muestra los iconos de captura de la cabecera. Sigue sirviendo como hero (el grid de tarjetas no ha cambiado), pero conviene rehacerla cuando se pueda.
+
+Las URLs públicas de las imágenes (`https://raw.githubusercontent.com/alpc-data-analyst/analytics-copilot/main/…`) solo funcionan **después** de que se publique la v1.4.0 en GitHub. Si la página se actualiza antes del push, las imágenes nuevas darían 404 — las actuales siguen funcionando.
+
+## Enlaces (sin cambios)
+
+| Qué | URL |
+|---|---|
+| Chrome Web Store (CTA principal) | https://chromewebstore.google.com/detail/analytics-copilot/icnecmnkghkklcjmolmmcljdodeglfpe |
+| Repositorio (MIT) | https://github.com/alpc-data-analyst/analytics-copilot |
+| Descarga ZIP | https://github.com/alpc-data-analyst/analytics-copilot/releases/latest |
+| Política de privacidad | https://github.com/alpc-data-analyst/analytics-copilot/blob/main/PRIVACY.md |
+
+## Privacidad — mantener el mensaje intacto
+
+La sección de privacidad **no cambia y no debe suavizarse**: la captura no añade permisos (usa `activeTab`, ya concedido bajo gesto del usuario), la imagen se compone en un canvas local y se guarda en el IndexedDB del propio navegador. Sin subidas, sin servidor, sin telemetría.

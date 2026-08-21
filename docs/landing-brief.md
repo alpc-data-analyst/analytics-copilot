@@ -7,7 +7,7 @@
 
 ## Qué es el producto (elevator pitch)
 
-Analytics Copilot es una extensión de Chrome (Manifest V3) con **9 herramientas de QA para analítica web**, creada por Antonio Luis Pérez. Permite auditar Consent Mode v2, vigilar la sesión de GA4 en tiempo real, verificar la atribución de Google Ads de punta a punta (clic de anuncio → gclid → cookie → conversión con value y currency) y generar eventos de dataLayer — todo desde el popup o el panel de DevTools, sin abrir la pestaña Network. 100% local: no envía ningún dato a ningún servidor.
+Analytics Copilot es una extensión de Chrome (Manifest V3) con **10 herramientas de QA para analítica web**, creada por Antonio Luis Pérez. Permite auditar Consent Mode v2, vigilar la sesión de GA4 en tiempo real, verificar la atribución de Google Ads de punta a punta (clic de anuncio → gclid → cookie → conversión con value y currency), generar eventos de dataLayer y documentar hallazgos con capturas de página completa anotadas — todo desde el popup o el panel de DevTools, sin abrir la pestaña Network. 100% local: no envía ningún dato a ningún servidor.
 
 ## Enlaces
 
@@ -24,7 +24,7 @@ Analytics Copilot es una extensión de Chrome (Manifest V3) con **9 herramientas
 Base: `https://raw.githubusercontent.com/alpc-data-analyst/analytics-copilot/main/`
 
 - `icons/logo.svg` — logo vectorial (pulso sobre badge slate `#1F2937`, punto azul `#38BDF8`)
-- `docs/screenshots/menu.jpg` — **hero/principal**: la parrilla de 9 herramientas (1280×800)
+- `docs/screenshots/menu.jpg` — **hero/principal**: la parrilla de herramientas (1280×800)
 - `docs/screenshots/consent-mode.jpg` — inspector de Consent Mode
 - `docs/screenshots/cookies.jpg` — Cookie Audit (sesión GA4 + atribución)
 - `docs/screenshots/push-event.jpg` — generador de eventos GA4
@@ -37,7 +37,7 @@ Todas las capturas van sobre fondo slate `#1F2937` — combinan bien sobre fondo
 ## Estructura sugerida de la página
 
 1. **Hero**: logo + "Analytics Copilot" + claim: *"QA de analítica web en un clic — GA4, GTM, Google Ads y Consent Mode"* + 2 CTAs: "Descargar (GitHub)" y "Chrome Web Store (próximamente)" + captura `menu.jpg`
-2. **Las 9 herramientas** (grid con iconos/emojis):
+2. **Las 10 herramientas** (grid con iconos/emojis):
    - 🔒 **Consent** — Inspector de Consent Mode v2: señales default→update, GCS/GCD decodificado, modo Básico vs Avanzado, hits de Google con su estado de consentimiento al disparo, calculadora GCD y auditoría con 18 reglas
    - 🍪 **Cookie Audit** — Sesión GA4 en vivo (client_id, countdown de inactividad), atribución de Google Ads (gclid → _gcl_aw, Conversion Linker) y conversiones (value, currency, label, enhanced conversions)
    - 🏷 **Tags** — Detecta 40+ herramientas de tracking con sus IDs y permite bloquearlas para pruebas
@@ -47,6 +47,7 @@ Todas las capturas van sobre fondo slate `#1F2937` — combinan bien sobre fondo
    - 🧪 **Lab** — Inyecta GTM de prueba, push al dataLayer (JSON) y bloqueo de requests
    - 📄 **HTML** — Copia o descarga el DOM renderizado
    - 📟 **Consola** — Captura console.* y errores JS (sobrevive a recargas)
+   - 📸 **Captura** — Pantallazo de la página completa (scroll + cosido) con editor para anotar con flechas, cajas y texto y difuminar datos sensibles antes de compartir
 3. **El flujo estrella** (diferencial del producto — sección "cómo se usa"): auditar un clic de anuncio real: *Iniciar Audit → clic en el anuncio → verificar que el gclid se guarda en _gcl_aw → completar la compra → ver la conversión con value, currency y si viajó el gclid. Sin abrir el Network.*
 4. **Capturas** (carrusel o grid con las 4 restantes)
 5. **Privacidad**: "100% local. Sin cuentas, sin telemetría, sin servidores. Los permisos sensibles son opcionales y se piden al usarlos." + enlace a PRIVACY.md
@@ -62,7 +63,7 @@ Todas las capturas van sobre fondo slate `#1F2937` — combinan bien sobre fondo
 ## SEO
 
 - Title: `Analytics Copilot — extensión de Chrome para QA de analítica web | Antonio Luis Pérez`
-- Meta description: `9 herramientas para auditar GA4, GTM, Google Ads y Consent Mode desde Chrome: sesión, atribución, conversiones y consentimiento en tiempo real. Gratis y open source.`
+- Meta description: `10 herramientas para auditar GA4, GTM, Google Ads y Consent Mode desde Chrome: sesión, atribución, conversiones, consentimiento y capturas anotadas. Gratis y open source.`
 - OG image: `docs/screenshots/promo-marquee-1400x560.png`
 
 ## Actualización pendiente en la landing
