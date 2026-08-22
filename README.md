@@ -50,6 +50,10 @@ Todo sin abrir la pestaña Network.
 |---|---|
 | ![Consent Mode](docs/screenshots/consent-mode.jpg) | ![Cookie Audit](docs/screenshots/cookies.jpg) |
 
+Y para documentar lo que encuentres, captura de página completa con editor: flechas, cajas, texto y difuminado de datos sensibles.
+
+![Editor de capturas](docs/screenshots/editor.jpg)
+
 ## Permisos y privacidad
 
 - **Todo es local**: la extensión no envía ningún dato a ningún servidor. Solo lee lo que ya ocurre en las páginas que visitas.

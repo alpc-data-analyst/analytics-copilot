@@ -25,6 +25,7 @@ Base: `https://raw.githubusercontent.com/alpc-data-analyst/analytics-copilot/mai
 
 - `icons/logo.svg` — logo vectorial (pulso sobre badge slate `#1F2937`, punto azul `#38BDF8`)
 - `docs/screenshots/menu.jpg` — **hero/principal**: la parrilla de herramientas (1280×800)
+- `docs/screenshots/editor.jpg` — editor de anotaciones sobre una captura de página completa (1280×800)
 - `docs/screenshots/consent-mode.jpg` — inspector de Consent Mode
 - `docs/screenshots/cookies.jpg` — Cookie Audit (sesión GA4 + atribución)
 - `docs/screenshots/push-event.jpg` — generador de eventos GA4

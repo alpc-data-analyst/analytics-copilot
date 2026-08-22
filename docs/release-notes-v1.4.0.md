@@ -37,12 +37,14 @@ Sugerencia de encaje: añadirlo al final de la sección "el flujo estrella", com
 
 ## Imágenes
 
-⚠ **Dos avisos importantes antes de tocar las imágenes:**
+Nueva imagen disponible para ilustrar la novedad:
 
-1. **Todavía no hay captura del editor de anotaciones.** No inventes ni generes una: si hace falta ilustrar la sección, usa las existentes o deja la tarjeta sin imagen hasta que Antonio suba una.
-2. `docs/screenshots/menu.jpg` es **anterior** a esta versión: no muestra los iconos de captura de la cabecera. Sigue sirviendo como hero (el grid de tarjetas no ha cambiado), pero conviene rehacerla cuando se pueda.
+- `docs/screenshots/editor.jpg` (1280×800) — **el editor de anotaciones** con la barra de herramientas visible (mover, flecha, caja, texto, difuminar, colores, deshacer, borrar) y una captura de página completa cargada. Úsala junto a la tarjeta nueva o en la sección de novedades.
+- `docs/screenshots/menu.jpg` (1280×800) — **actualizada**: el hero ahora muestra los tres iconos de captura en la cabecera (guardar, abrir, cámara). Sustituye a la anterior en la misma URL, así que no hay que cambiar ningún enlace.
 
-Las URLs públicas de las imágenes (`https://raw.githubusercontent.com/alpc-data-analyst/analytics-copilot/main/…`) solo funcionan **después** de que se publique la v1.4.0 en GitHub. Si la página se actualiza antes del push, las imágenes nuevas darían 404 — las actuales siguen funcionando.
+Ambas siguen el mismo formato que el resto: fondo slate `#1F2937`, 1280×800.
+
+⚠ No generes ni inventes imágenes de la extensión. Si necesitas alguna vista que no está en `docs/screenshots/`, pídesela a Antonio.
 
 ## Enlaces (sin cambios)
 
