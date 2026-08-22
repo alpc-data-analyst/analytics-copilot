@@ -21,7 +21,13 @@ content/
   time-travel-cs.js    CS dinámico — pide a background inyectar override de `Date`
   floating-widget.js   CS dinámico — widget flotante con features activas
   console-capture-cs.js CS dinámico (world MAIN) — captura console.* durante la captura
+docs/                  Material de publicación (capturas finales, briefing de la landing,
+                       notas de versión y ficha de la Store)
+capturas/              Local, fuera de git: originales en bruto de las capturas
+dist/                  Local, fuera de git: ZIPs de cada release
 ```
+
+Convenciones del proyecto y reglas que no hay que repetir: `CLAUDE.md`.
 
 ---
 

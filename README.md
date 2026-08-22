@@ -65,9 +65,10 @@ Y para documentar lo que encuentres, captura de página completa con editor: fle
 ```
 manifest.json      Manifest V3
 background.js      Service worker (motor del Cookie Audit, inyecciones, Lab)
-ui/                Popup, panel DevTools, lógica y estilos
+ui/                Popup, panel DevTools, visor de capturas, lógica y estilos
 content/           Content scripts dinámicos (Time Travel, widget, captura de consola)
 icons/             Iconos y fuentes SVG
+docs/              Capturas, notas de versión y material de publicación
 ```
 
 Documentación técnica completa en [ARQUITECTURA.md](ARQUITECTURA.md).

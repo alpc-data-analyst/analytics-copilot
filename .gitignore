@@ -13,5 +13,11 @@ npm-debug.log*
 
 # Node (por si acaso)
 node_modules/
+# Material de trabajo local (originales de capturas y ZIPs de release)
 capturas/
 dist/
+
+# Capturas sueltas en la raíz: van a capturas/, nunca al repo
+/*.png
+/*.jpg
+/*.jpeg
